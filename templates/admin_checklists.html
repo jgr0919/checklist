@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/static/becoming-production-icon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checklists – Checklist</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #111;
+      min-height: 100vh;
+    }
+
+    nav {
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .875rem 2rem;
+      position: relative;
+    }
+    nav .brand { font-size: 1.1rem; font-weight: 700; color: #111; text-decoration: none; }
+    nav .nav-links { display: none; position: absolute; top: 100%; right: 1rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: .4rem 0; min-width: 180px; z-index: 100; flex-direction: column; }
+    nav .nav-links.open { display: flex; }
+    nav .nav-links a { font-size: .875rem; color: #374151; text-decoration: none; font-weight: 500; padding: .65rem 1.25rem; display: block; }
+    nav .nav-links a:hover { color: #111; }
+    nav .nav-links a.active { color: #111; font-weight: 700; background: #f3f4f6; }
+    nav .nav-links a.btn-logout { background: none; }
+    nav .nav-links a.btn-logout:hover { background: #f9fafb; }
+
+    main { max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem; }
+
+    .page-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.75rem; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; }
+
+    .alert { border-radius: 8px; padding: .75rem 1rem; font-size: .875rem; margin-bottom: 1.25rem; border-left: 4px solid transparent; }
+    .alert-error   { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+    .alert-success { background: #f0fdf4; border-color: #22c55e; color: #166534; }
+    .alert-info    { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+
+    /* Filter bar */
+    .filter-bar {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      padding: .875rem 1rem;
+      display: flex;
+      gap: .75rem;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+    .filter-bar input[type="text"] {
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: .5rem .875rem;
+      font-size: .875rem;
+      outline: none;
+      min-width: 220px;
+      flex: 1;
+    }
+    .filter-bar input[type="text"]:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(0,0,0,.1); }
+    .filter-bar select {
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: .5rem .75rem;
+      font-size: .875rem;
+      outline: none;
+      background: #fff;
+      color: #374151;
+    }
+    .filter-bar select:focus { border-color: #111; }
+
+    /* Table */
+    .table-wrap {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      overflow: visible;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    thead th {
+      background: #f9fafb;
+      padding: .75rem 1rem;
+      text-align: left;
+      font-size: .75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: #6b7280;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    tbody td { padding: .875rem 1rem; border-bottom: 1px solid #f3f4f6; color: #374151; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #fafafa; }
+    .empty-row td { text-align: center; color: #9ca3af; padding: 2.5rem; }
+
+    .badge { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+    .badge-green  { background: #111; color: #fff; }
+    .badge-gray   { background: #f3f4f6; color: #6b7280; }
+    .badge-indigo { background: #111; color: #fff; }
+    .badge-yellow { background: #e5e7eb; color: #555; }
+
+    .btn { display: inline-block; padding: .4rem .85rem; border-radius: 8px; font-size: .8125rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: background .15s; }
+    .btn-primary { background: #111; color: #fff; }
+    .btn-primary:hover { background: #333; }
+    .btn-ghost { background: #f3f4f6; color: #374151; }
+    .btn-ghost:hover { background: #e5e7eb; }
+
+    .summary { font-size: .8125rem; color: #6b7280; }
+
+    /* ── Actions dropdown ── */
+    .actions-wrap { position: relative; display: inline-block; }
+    .actions-btn {
+      background: #f3f4f6;
+      border: none;
+      border-radius: 8px;
+      padding: .4rem .75rem;
+      font-size: .8125rem;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+    }
+    .actions-btn:hover { background: #e5e7eb; }
+    .actions-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: calc(100% + 4px);
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.1);
+      min-width: 160px;
+      z-index: 50;
+      overflow: hidden;
+    }
+    .actions-menu.open { display: block; }
+    .actions-menu a,
+    .actions-menu button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: .6rem 1rem;
+      font-size: .8125rem;
+      font-weight: 500;
+      color: #374151;
+      text-decoration: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    .actions-menu a:hover,
+    .actions-menu button:hover { background: #f9fafb; color: #111; }
+    .actions-menu form { margin: 0; }
+
+    /* ── Hamburger ── */
+    .nav-user { display: flex; align-items: center; gap: .5rem; margin-left: auto; margin-right: .75rem; }
+    .nav-user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #111; color: #fff; font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nav-user-name { font-size: .8125rem; font-weight: 500; color: #374151; }
+    .hamburger { display: flex; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: #374151; border-radius: 2px; }
+
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="brand" href="{{ url_for('dashboard') }}"><img src="/static/becoming-production-icon.svg" alt="" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;">Checklist</a>
+    <div class="nav-user"><span class="nav-user-avatar">{{ current_user.username[0] | upper }}</span><span class="nav-user-name">{{ current_user.username }}</span></div>
+    <button class="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+    <div class="nav-links">
+      <a href="{{ url_for('admin_checklists') }}" class="active">Checklists</a>
+      <a href="{{ url_for('admin_completions') }}">Completions</a>
+      <a href="{{ url_for('admin_users') }}">Users</a>
+      <a href="{{ url_for('admin_roles') }}">Roles</a>
+      <a href="{{ url_for('admin_teams') }}">Teams</a>
+      <a href="{{ url_for('logout') }}" class="btn-logout">Sign out</a>
+    </div>
+  </nav>
+
+  <main>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="page-header">
+      <h1>Checklists <span class="summary">({{ checklists | length }})</span></h1>
+      <a href="{{ url_for('admin_checklist_new') }}" class="btn btn-primary">+ New checklist</a>
+    </div>
+
+    <div class="filter-bar">
+      <input type="text" id="search" placeholder="Search by name…" oninput="filterTable()" />
+      <select id="statusFilter" onchange="filterTable()">
+        <option value="">All statuses</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table id="checklists-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Items</th>
+            <th>Completions</th>
+            <th>Status</th>
+            <th>Team</th>
+            <th>Role</th>
+            <th>Created by</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if checklists %}
+            {% for cl in checklists %}
+            <tr data-status="{{ 'active' if cl.is_active else 'inactive' }}">
+              <td>
+                <strong>{{ cl.name }}</strong>
+                {% if cl.description %}
+                  <br><span style="font-size:.8rem;color:#9ca3af;">{{ cl.description | truncate(70) }}</span>
+                {% endif %}
+              </td>
+              <td>{{ cl.items | length }}</td>
+              <td>{{ cl.completions | length }}</td>
+              <td>
+                {% if cl.is_active %}
+                  <span class="badge badge-green">Active</span>
+                {% else %}
+                  <span class="badge badge-gray">Inactive</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if cl.team %}
+                  <span style="display:inline-flex;align-items:center;gap:.4rem;">
+                    <span style="width:10px;height:10px;border-radius:50%;background:{{ cl.team.color or '#111' }};flex-shrink:0;display:inline-block;"></span>
+                    {{ cl.team.name }}
+                  </span>
+                {% else %}
+                  <span style="color:#9ca3af;font-size:.8rem;">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if cl.assigned_role %}
+                  <span class="badge badge-yellow">{{ cl.assigned_role | capitalize }}</span>
+                {% else %}
+                  <span style="color:#9ca3af;font-size:.8rem;">All</span>
+                {% endif %}
+              </td>
+              <td>{{ cl.creator.username if cl.creator else '—' }}</td>
+              <td>
+                <div class="actions-wrap">
+                  <button class="actions-btn" onclick="toggleMenu(this)">
+                    Actions <span>▾</span>
+                  </button>
+                  <div class="actions-menu">
+                    <form method="POST" action="{{ url_for('start_checklist', checklist_id=cl.id) }}">
+                      <button type="submit">Start</button>
+                    </form>
+                    <a href="{{ url_for('admin_checklist_edit', checklist_id=cl.id) }}">Edit</a>
+                    <a href="{{ url_for('admin_checklist_history', checklist_id=cl.id) }}">History</a>
+                    <a href="{{ url_for('admin_checklist_export_pdf', checklist_id=cl.id) }}">Export PDF</a>
+                    <form method="POST" action="{{ url_for('admin_checklist_duplicate', checklist_id=cl.id) }}">
+                      <button type="submit">Duplicate</button>
+                    </form>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr class="empty-row"><td colspan="7">No checklists yet. <a href="{{ url_for('admin_checklist_new') }}" style="color:#111;">Create one</a>.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <script>
+    function toggleMenu(btn) {
+      const menu = btn.nextElementSibling;
+      const isOpen = menu.classList.contains('open');
+      document.querySelectorAll('.actions-menu.open').forEach(m => m.classList.remove('open'));
+      if (!isOpen) menu.classList.add('open');
+    }
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.actions-wrap')) {
+        document.querySelectorAll('.actions-menu.open').forEach(m => m.classList.remove('open'));
+      }
+    });
+  </script>
+  <script>
+    function filterTable() {
+      const search = document.getElementById('search').value.toLowerCase();
+      const status = document.getElementById('statusFilter').value;
+
+      document.querySelectorAll('#checklists-table tbody tr:not(.empty-row)').forEach(row => {
+        const text      = row.textContent.toLowerCase();
+        const rowStatus = row.dataset.status || '';
+
+        const matchSearch = !search || text.includes(search);
+        const matchStatus = !status || rowStatus === status;
+        row.style.display = matchSearch && matchStatus ? '' : 'none';
+      });
+    }
+  </script>
+  <script>
+    document.querySelector('.hamburger').addEventListener('click', function() {
+      var m = this.closest('nav').querySelector('.nav-links, .nav-right');
+      if (m) m.classList.toggle('open');
+    });
+  </script>
+</body>
+</html>

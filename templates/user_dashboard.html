@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/static/becoming-production-icon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard – Checklist</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #111;
+      min-height: 100vh;
+    }
+
+    nav {
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .875rem 2rem;
+      position: relative;
+    }
+    nav .brand { font-size: 1.1rem; font-weight: 700; color: #111; text-decoration: none; }
+    nav .nav-links { display: none; position: absolute; top: 100%; right: 1rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: .4rem 0; min-width: 180px; z-index: 100; flex-direction: column; }
+    nav .nav-links.open { display: flex; }
+    nav .nav-links a { font-size: .875rem; color: #374151; text-decoration: none; font-weight: 500; padding: .65rem 1.25rem; display: block; }
+    nav .nav-links a:hover { color: #111; }
+    nav .nav-links a.btn-logout { background: none; }
+    nav .nav-links a.btn-logout:hover { background: #f9fafb; }
+
+    main { max-width: 960px; margin: 2rem auto; padding: 0 1.5rem; }
+
+    .page-header { margin-bottom: 1.75rem; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; }
+    .page-header p { font-size: .875rem; color: #6b7280; margin-top: .25rem; }
+
+    .alert { border-radius: 8px; padding: .75rem 1rem; font-size: .875rem; margin-bottom: 1.25rem; border-left: 4px solid transparent; }
+    .alert-error   { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+    .alert-success { background: #f0fdf4; border-color: #22c55e; color: #166534; }
+    .alert-info    { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+
+    .section { margin-bottom: 2.25rem; }
+    .section h2 { font-size: 1.05rem; font-weight: 600; margin-bottom: .875rem; color: #374151; }
+
+    .team-group { margin-bottom: 2rem; }
+    .team-group-label {
+      font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+      color: #9ca3af; margin-bottom: .75rem; padding-bottom: .4rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    /* Today cards */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .checklist-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+    }
+
+    .checklist-card .card-title { font-size: 1rem; font-weight: 600; color: #111; }
+    .checklist-card .card-desc { font-size: .8125rem; color: #6b7280; }
+    .checklist-card .card-meta { font-size: .75rem; color: #9ca3af; }
+
+    .btn {
+      display: inline-block;
+      padding: .45rem .9rem;
+      border-radius: 8px;
+      font-size: .8125rem;
+      font-weight: 600;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: background .15s;
+      text-align: center;
+    }
+    .btn-primary { background: #111; color: #fff; }
+    .btn-primary:hover { background: #333; }
+    .btn-ghost { background: #f3f4f6; color: #374151; }
+    .btn-ghost:hover { background: #e5e7eb; }
+
+    .btn-start {
+      align-self: flex-start;
+      margin-top: auto;
+    }
+
+    /* Table */
+    .table-wrap {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      overflow-x: auto;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    thead th {
+      background: #f9fafb;
+      padding: .75rem 1rem;
+      text-align: left;
+      font-size: .75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: #6b7280;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    tbody td { padding: .875rem 1rem; border-bottom: 1px solid #f3f4f6; color: #374151; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #fafafa; }
+    .empty-row td { text-align: center; color: #9ca3af; padding: 2rem; }
+
+    .badge { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+    .badge-green  { background: #111; color: #fff; }
+    .badge-yellow { background: #e5e7eb; color: #555; }
+    .badge-indigo { background: #111; color: #fff; }
+
+    .progress-wrap { display: flex; align-items: center; gap: .5rem; }
+    .progress-bar-bg { flex: 1; background: #e5e7eb; border-radius: 999px; height: 6px; min-width: 80px; }
+    .progress-bar-fill { background: #111; height: 6px; border-radius: 999px; }
+    .empty-section {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      padding: 2rem;
+      text-align: center;
+      color: #9ca3af;
+      font-size: .875rem;
+    }
+
+    /* ── Hamburger ── */
+    .nav-user { display: flex; align-items: center; gap: .5rem; margin-left: auto; margin-right: .75rem; }
+    .nav-user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #111; color: #fff; font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nav-user-name { font-size: .8125rem; font-weight: 500; color: #374151; }
+    .hamburger { display: flex; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: #374151; border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="brand" href="{{ url_for('dashboard') }}"><img src="/static/becoming-production-icon.svg" alt="" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;">Checklist</a>
+    <div class="nav-user"><span class="nav-user-avatar">{{ current_user.username[0] | upper }}</span><span class="nav-user-name">{{ current_user.username }}</span></div>
+    <button class="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+    <div class="nav-links">
+      <a href="{{ url_for('change_password') }}">Change password</a>
+      <a href="{{ url_for('logout') }}" class="btn-logout">Sign out</a>
+    </div>
+  </nav>
+
+  <main>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="page-header">
+      <h1>My Dashboard</h1>
+    </div>
+
+    <!-- Checklists grouped by team -->
+    <div class="section">
+      <h2>Checklists</h2>
+      {% if grouped_checklists %}
+        {% for team_name, team_checklists in grouped_checklists %}
+        <div class="team-group">
+          <div class="team-group-label">{{ team_name }}</div>
+          <div class="cards-grid">
+            {% for cl in team_checklists %}
+            <div class="checklist-card">
+              <div class="card-title">{{ cl.name }}</div>
+              {% if cl.description %}
+                <div class="card-desc">{{ cl.description }}</div>
+              {% endif %}
+              <div class="card-meta">{{ cl.items | length }} item{{ 's' if cl.items | length != 1 else '' }}</div>
+              <form method="POST" action="{{ url_for('start_checklist', checklist_id=cl.id) }}" class="btn-start">
+                <button type="submit" class="btn btn-primary">Start checklist</button>
+              </form>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-section">No checklists available.</div>
+      {% endif %}
+    </div>
+
+    <!-- My recent completions -->
+    <div class="section">
+      <h2>My Recent Activity</h2>
+      {% if my_completions %}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Checklist</th>
+                <th>Progress</th>
+                <th>Started</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for comp in my_completions %}
+              <tr>
+                <td><strong>{{ comp.checklist.name }}</strong></td>
+                <td>
+                  <div class="progress-wrap">
+                    <div class="progress-bar-bg">
+                      <div class="progress-bar-fill" style="width:{{ comp.progress }}%;"></div>
+                    </div>
+                    <span style="font-size:.8rem;color:#6b7280;">{{ comp.progress }}%</span>
+                  </div>
+                </td>
+                <td style="white-space:nowrap;">{{ comp.started_at.strftime('%b %-d, %H:%M') }}</td>
+                <td>
+                  {% if comp.signed_off %}
+                    <span class="badge badge-green">Signed off</span>
+                  {% else %}
+                    <span class="badge badge-yellow">In progress</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if comp.signed_off %}
+                    <a href="{{ url_for('view_completion', completion_id=comp.id) }}" class="btn btn-ghost">View</a>
+                  {% else %}
+                    <a href="{{ url_for('do_checklist', completion_id=comp.id) }}" class="btn btn-primary">Continue</a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-section">No activity yet. Start a checklist above!</div>
+      {% endif %}
+    </div>
+
+  </main>
+  <script>
+    document.querySelector('.hamburger').addEventListener('click', function() {
+      var m = this.closest('nav').querySelector('.nav-links, .nav-right');
+      if (m) m.classList.toggle('open');
+    });
+  </script>
+</body>
+</html>

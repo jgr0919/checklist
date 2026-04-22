@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/static/becoming-production-icon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ completion.checklist.name }} – Checklist</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #111;
+      min-height: 100vh;
+    }
+
+    nav {
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .875rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    nav .brand { font-size: 1.1rem; font-weight: 700; color: #111; text-decoration: none; }
+    nav .nav-right { display: none; position: absolute; top: 100%; right: 1rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: .4rem 0; min-width: 180px; z-index: 100; flex-direction: column; }
+    nav .nav-right.open { display: flex; }
+    nav .nav-right a { font-size: .875rem; color: #374151; text-decoration: none; font-weight: 500; padding: .65rem 1.25rem; display: block; }
+    nav .nav-right a:hover { color: #111; }
+    nav .nav-right a.btn-logout { background: none; }
+    nav .nav-right a.btn-logout:hover { background: #f9fafb; }
+
+    .progress-header {
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: .75rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      position: sticky;
+      top: 57px;
+      z-index: 9;
+    }
+    .progress-header .label { font-size: .8125rem; color: #6b7280; white-space: nowrap; }
+    .progress-bar-bg { flex: 1; background: #e5e7eb; border-radius: 999px; height: 8px; }
+    .progress-bar-fill { background: #111; height: 8px; border-radius: 999px; transition: width .3s; }
+    .progress-header .pct { font-size: .8125rem; font-weight: 600; color: #111; white-space: nowrap; }
+
+    main { max-width: 760px; margin: 2rem auto; padding: 0 1.5rem 6rem; }
+
+    .checklist-title { font-size: 1.4rem; font-weight: 700; margin-bottom: .25rem; }
+    .checklist-meta { font-size: .875rem; color: #6b7280; margin-bottom: 1.5rem; }
+
+    .alert { border-radius: 8px; padding: .75rem 1rem; font-size: .875rem; margin-bottom: 1.25rem; border-left: 4px solid transparent; }
+    .alert-error   { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+    .alert-success { background: #f0fdf4; border-color: #22c55e; color: #166534; }
+    .alert-info    { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+
+    .item-list { display: flex; flex-direction: column; gap: .75rem; margin-bottom: 1.75rem; }
+
+    .item-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      padding: 1rem 1.25rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      transition: box-shadow .15s;
+      border-left: 3px solid transparent;
+    }
+    .item-card.checked { border-left-color: #111; background: #fafafa; }
+    .item-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.09); }
+
+    .item-checkbox-wrap { padding-top: 2px; flex-shrink: 0; }
+    .item-checkbox { width: 20px; height: 20px; accent-color: #111; cursor: pointer; }
+
+    .item-body { flex: 1; min-width: 0; }
+    .item-title { font-size: .9375rem; font-weight: 500; }
+    .item-title .req-tag { font-size: .7rem; color: #ef4444; font-weight: 600; text-transform: uppercase; margin-left: .4rem; vertical-align: middle; }
+    .item-desc { font-size: .8125rem; color: #6b7280; margin-top: .2rem; }
+
+    .item-actions { display: flex; gap: .75rem; margin-top: .6rem; flex-wrap: wrap; }
+
+    .notes-toggle {
+      background: none;
+      border: none;
+      font-size: .8rem;
+      color: #555;
+      cursor: pointer;
+      padding: 0;
+      font-weight: 500;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .notes-toggle:hover { color: #111; }
+
+    .notes-field {
+      margin-top: .5rem;
+      width: 100%;
+      padding: .5rem .75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: .875rem;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 60px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .notes-field:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(0,0,0,.08); }
+
+    /* Visual aid photo */
+    .visual-aid { margin-top: .6rem; }
+    .visual-aid img {
+      display: block;
+      max-width: 780px;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      object-fit: cover;
+    }
+    .visual-aid-label { font-size: .75rem; color: #9ca3af; margin-bottom: .3rem; }
+
+    /* Section cards */
+    .section-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-card h2 { font-size: 1rem; font-weight: 600; margin-bottom: .875rem; }
+
+    textarea.overall { width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: .625rem .875rem; font-size: .875rem; font-family: inherit; resize: vertical; min-height: 80px; outline: none; }
+    textarea.overall:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(0,0,0,.08); }
+
+    .signoff-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      padding: 1.25rem;
+      border-top: 3px solid #111;
+      margin-bottom: 1.25rem;
+    }
+    .signoff-card h2 { font-size: 1rem; font-weight: 600; margin-bottom: .875rem; }
+    .signoff-card input[type="text"] {
+      width: 100%;
+      padding: .625rem .875rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: .9375rem;
+      color: #111;
+      outline: none;
+      font-family: inherit;
+    }
+    .signoff-card input[type="text"]:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(0,0,0,.08); }
+    .signoff-hint { font-size: .8rem; color: #9ca3af; margin-top: .35rem; }
+
+    .action-bar { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+
+    .btn { display: inline-block; padding: .6rem 1.25rem; border-radius: 8px; font-size: .9rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: background .15s; }
+    .btn-primary { background: #111; color: #fff; }
+    .btn-primary:hover { background: #333; }
+    .btn-ghost { background: #f3f4f6; color: #374151; }
+    .btn-ghost:hover { background: #e5e7eb; }
+
+    .save-indicator { font-size: .8rem; color: #9ca3af; }
+
+    /* ── Hamburger ── */
+    .nav-user { display: flex; align-items: center; gap: .5rem; margin-left: auto; margin-right: .75rem; }
+    .nav-user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #111; color: #fff; font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nav-user-name { font-size: .8125rem; font-weight: 500; color: #374151; }
+    .hamburger { display: flex; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: #374151; border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="brand" href="{{ url_for('dashboard') }}"><img src="/static/becoming-production-icon.svg" alt="" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;">Checklist</a>
+    <div class="nav-user"><span class="nav-user-avatar">{{ current_user.username[0] | upper }}</span><span class="nav-user-name">{{ current_user.username }}</span></div>
+    <button class="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+    <div class="nav-right">
+      <a href="{{ url_for('dashboard') }}">Dashboard</a>
+      <a href="{{ url_for('logout') }}" class="btn-logout">Sign out</a>
+    </div>
+  </nav>
+
+  <div class="progress-header">
+    <span class="label">Progress</span>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-fill" style="width:{{ completion.progress }}%;"></div>
+    </div>
+    <span class="pct" id="progress-pct">{{ completion.progress }}%</span>
+  </div>
+
+  <main>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="checklist-title">{{ completion.checklist.name }}</div>
+    <div class="checklist-meta">
+      {{ completion.item_responses | length }} item{{ 's' if completion.item_responses | length != 1 else '' }}
+    </div>
+
+    <form method="POST" action="{{ url_for('do_checklist', completion_id=completion.id) }}"
+          id="checklist-form">
+
+      <div class="item-list">
+        {% for response in completion.item_responses %}
+        <div class="item-card {{ 'checked' if response.is_checked else '' }}" id="card-{{ response.item_id }}">
+          <div class="item-checkbox-wrap">
+            <input
+              class="item-checkbox"
+              type="checkbox"
+              name="item_{{ response.item_id }}"
+              id="item_{{ response.item_id }}"
+              value="on"
+              {{ 'checked' if response.is_checked else '' }}
+              data-item-id="{{ response.item_id }}"
+              data-completion-id="{{ completion.id }}"
+              onchange="onItemChange(this)"
+            />
+          </div>
+          <div class="item-body">
+            <div class="item-title">
+              <label for="item_{{ response.item_id }}" style="cursor:pointer;">{{ response.item.title }}</label>
+              {% if response.item.is_required %}
+                <span class="req-tag">Required</span>
+              {% endif %}
+            </div>
+            {% if response.item.description %}
+              <div class="item-desc">{{ response.item.description }}</div>
+            {% endif %}
+
+            <div class="item-actions">
+              <button type="button" class="notes-toggle" onclick="toggleSection(this, 'notes-{{ response.item_id }}')">
+                {{ '▾ Note' if response.notes else '+ Note' }}
+              </button>
+            </div>
+
+            <textarea
+              class="notes-field"
+              name="notes_{{ response.item_id }}"
+              id="notes-{{ response.item_id }}"
+              placeholder="Add a note…"
+              data-item-id="{{ response.item_id }}"
+              data-completion-id="{{ completion.id }}"
+              style="{{ '' if response.notes else 'display:none;' }}"
+              onblur="onNotesBlur(this)"
+            >{{ response.notes or '' }}</textarea>
+
+            {% if response.item.visual_aid_photo %}
+            <div class="visual-aid">
+              <div class="visual-aid-label">Visual Aid</div>
+              <img src="{{ image_url(response.item.visual_aid_photo) }}"
+                   alt="Visual aid for {{ response.item.title }}" />
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="section-card">
+        <h2>Overall Notes</h2>
+        <textarea name="overall_notes" class="overall" placeholder="Any overall notes for this checklist run…">{{ completion.overall_notes or '' }}</textarea>
+      </div>
+
+      <div class="signoff-card">
+        <h2>Sign Off</h2>
+        <input type="text" name="signature_name" placeholder="Your full name" />
+        <p class="signoff-hint">All required items must be checked before signing off.</p>
+      </div>
+
+      <div class="action-bar">
+        <button type="submit" name="action" value="" class="btn btn-ghost">Save progress</button>
+        <button type="submit" name="action" value="sign_off" class="btn btn-primary">Sign off checklist</button>
+        <span class="save-indicator" id="save-indicator"></span>
+      </div>
+
+    </form>
+
+    <form method="POST" action="{{ url_for('cancel_checklist', completion_id=completion.id) }}"
+          style="margin-top:1.5rem;"
+          onsubmit="return confirm('Cancel this checklist? All progress will be lost.');">
+      <button type="submit" class="btn btn-ghost" style="color:#ef4444;">Cancel checklist</button>
+    </form>
+  </main>
+
+  <script>
+    const totalItems = {{ completion.item_responses | length }};
+
+    function updateProgress() {
+      const checked = document.querySelectorAll('.item-checkbox:checked').length;
+      const pct = totalItems ? Math.round((checked / totalItems) * 100) : 0;
+      document.getElementById('progress-fill').style.width = pct + '%';
+      document.getElementById('progress-pct').textContent = pct + '%';
+    }
+
+    function onItemChange(checkbox) {
+      const card = document.getElementById('card-' + checkbox.dataset.itemId);
+      card.classList.toggle('checked', checkbox.checked);
+      updateProgress();
+      autoSave(
+        checkbox.dataset.completionId,
+        checkbox.dataset.itemId,
+        checkbox.checked,
+        document.querySelector(`textarea[data-item-id="${checkbox.dataset.itemId}"]`).value
+      );
+    }
+
+    function onNotesBlur(textarea) {
+      const checkbox = document.querySelector(`input[data-item-id="${textarea.dataset.itemId}"]`);
+      autoSave(textarea.dataset.completionId, textarea.dataset.itemId, checkbox.checked, textarea.value);
+    }
+
+    function autoSave(completionId, itemId, checked, notes) {
+      const indicator = document.getElementById('save-indicator');
+      indicator.textContent = 'Saving…';
+      fetch(`/api/completion/${completionId}/item/${itemId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checked, notes })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          indicator.textContent = 'Saved';
+          setTimeout(() => { indicator.textContent = ''; }, 2000);
+        }
+      })
+      .catch(() => { indicator.textContent = ''; });
+    }
+
+    function toggleSection(btn, sectionId) {
+      const el = document.getElementById(sectionId);
+      const hidden = el.style.display === 'none';
+      el.style.display = hidden ? '' : 'none';
+      btn.textContent = hidden ? '▾ Note' : '+ Note';
+      if (hidden) el.focus();
+    }
+
+  </script>
+  <script>
+    document.querySelector('.hamburger').addEventListener('click', function() {
+      var m = this.closest('nav').querySelector('.nav-links, .nav-right');
+      if (m) m.classList.toggle('open');
+    });
+  </script>
+</body>
+</html>

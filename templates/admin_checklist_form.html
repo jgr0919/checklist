@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/static/becoming-production-icon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ 'Edit' if checklist else 'New' }} Checklist – Checklist</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #111;
+      min-height: 100vh;
+    }
+
+    nav {
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .875rem 2rem;
+      position: relative;
+    }
+    nav .brand { font-size: 1.1rem; font-weight: 700; color: #111; text-decoration: none; }
+    nav .nav-links { display: none; position: absolute; top: 100%; right: 1rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: .4rem 0; min-width: 180px; z-index: 100; flex-direction: column; }
+    nav .nav-links.open { display: flex; }
+    nav .nav-links a { font-size: .875rem; color: #374151; text-decoration: none; font-weight: 500; padding: .65rem 1.25rem; display: block; }
+    nav .nav-links a:hover { color: #111; }
+    nav .nav-links a.btn-logout { background: none; }
+    nav .nav-links a.btn-logout:hover { background: #f9fafb; }
+
+    main { max-width: 760px; margin: 2rem auto; padding: 0 1.5rem; }
+
+    .page-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.75rem; }
+    .page-header a { color: #6b7280; text-decoration: none; font-size: .875rem; }
+    .page-header a:hover { color: #111; }
+    .page-header h1 { font-size: 1.4rem; font-weight: 700; }
+
+    .alert { border-radius: 8px; padding: .75rem 1rem; font-size: .875rem; margin-bottom: 1.25rem; border-left: 4px solid transparent; }
+    .alert-error   { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+    .alert-success { background: #f0fdf4; border-color: #22c55e; color: #166534; }
+    .alert-info    { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,.06); padding: 1.75rem; margin-bottom: 1.25rem; }
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1.25rem; color: #374151; border-bottom: 1px solid #f3f4f6; padding-bottom: .75rem; }
+
+    .field { margin-bottom: 1.25rem; }
+    label { display: block; font-size: .875rem; font-weight: 500; color: #374151; margin-bottom: .4rem; }
+    label .req { color: #ef4444; margin-left: 2px; }
+
+    input[type="text"],
+    input[type="date"],
+    textarea,
+    select {
+      width: 100%;
+      padding: .625rem .875rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: .9375rem;
+      color: #111;
+      outline: none;
+      font-family: inherit;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: #111;
+      box-shadow: 0 0 0 3px rgba(0,0,0,.1);
+    }
+    textarea { resize: vertical; min-height: 80px; }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .875rem;
+      color: #374151;
+      cursor: pointer;
+    }
+    .checkbox-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: #111; cursor: pointer; }
+
+    /* Items */
+    #items-list { display: flex; flex-direction: column; gap: .875rem; }
+
+    .item-row {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 1rem;
+      position: relative;
+    }
+    .drag-handle {
+      cursor: grab;
+      color: #9ca3af;
+      font-size: 1rem;
+      padding: 2px 4px;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .drag-handle:active { cursor: grabbing; }
+    .item-row.sortable-ghost { opacity: .4; }
+    .item-row-inner { display: flex; gap: .75rem; align-items: flex-start; }
+
+    .item-row .item-fields { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    .item-row .item-fields .full { grid-column: 1 / -1; }
+    .item-row textarea { min-height: 60px; resize: vertical; }
+
+    .item-photo-preview {
+      display: block;
+      max-width: 180px;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+      margin-bottom: .5rem;
+      object-fit: cover;
+    }
+
+    .file-input-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      border: 1px dashed #d1d5db;
+      border-radius: 8px;
+      padding: .4rem .75rem;
+      font-size: .8rem;
+      color: #6b7280;
+      cursor: pointer;
+      background: #fff;
+      font-weight: 500;
+      transition: border-color .15s;
+    }
+    .file-input-wrap:hover { border-color: #111; color: #111; }
+    .file-input-wrap input[type="file"] { display: none; }
+
+    .item-row .item-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: .75rem;
+    }
+
+    .btn-remove {
+      background: none;
+      border: none;
+      color: #ef4444;
+      font-size: .8125rem;
+      cursor: pointer;
+      padding: 0;
+      font-weight: 500;
+    }
+    .btn-remove:hover { text-decoration: underline; }
+
+    .btn-add {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      background: #f3f4f6;
+      border: 1px dashed #d1d5db;
+      border-radius: 8px;
+      padding: .6rem 1rem;
+      font-size: .875rem;
+      font-weight: 500;
+      color: #6b7280;
+      cursor: pointer;
+      width: 100%;
+      justify-content: center;
+      margin-top: .5rem;
+      transition: background .15s;
+    }
+    .btn-add:hover { background: #e5e7eb; color: #374151; }
+
+    .form-actions { display: flex; gap: .75rem; align-items: center; margin-top: 1.5rem; }
+
+    .btn { display: inline-block; padding: .6rem 1.25rem; border-radius: 8px; font-size: .9rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: background .15s; }
+    .btn-primary { background: #111; color: #fff; }
+    .btn-primary:hover { background: #333; }
+    .btn-ghost { background: #f3f4f6; color: #374151; }
+    .btn-ghost:hover { background: #e5e7eb; }
+    .btn-danger { background: #fef2f2; color: #dc2626; }
+    .btn-danger:hover { background: #fee2e2; }
+
+    /* ── Hamburger ── */
+    .nav-user { display: flex; align-items: center; gap: .5rem; margin-left: auto; margin-right: .75rem; }
+    .nav-user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #111; color: #fff; font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nav-user-name { font-size: .8125rem; font-weight: 500; color: #374151; }
+    .hamburger { display: flex; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: #374151; border-radius: 2px; }
+
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="brand" href="{{ url_for('dashboard') }}"><img src="/static/becoming-production-icon.svg" alt="" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;">Checklist</a>
+    <div class="nav-user"><span class="nav-user-avatar">{{ current_user.username[0] | upper }}</span><span class="nav-user-name">{{ current_user.username }}</span></div>
+    <button class="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+    <div class="nav-links">
+      <a href="{{ url_for('admin_checklists') }}">Checklists</a>
+      <a href="{{ url_for('admin_completions') }}">Completions</a>
+      <a href="{{ url_for('admin_users') }}">Users</a>
+      <a href="{{ url_for('admin_roles') }}">Roles</a>
+      <a href="{{ url_for('admin_teams') }}">Teams</a>
+      <a href="{{ url_for('logout') }}" class="btn-logout">Sign out</a>
+    </div>
+  </nav>
+
+  <main>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="page-header">
+      <a href="{{ url_for('admin_checklists') }}">← Checklists</a>
+      <h1>{{ 'Edit Checklist' if checklist else 'New Checklist' }}</h1>
+    </div>
+
+    <form method="POST" action="{{ url_for('admin_checklist_edit', checklist_id=checklist.id) if checklist else url_for('admin_checklist_new') }}"
+          enctype="multipart/form-data">
+
+      <div class="form-actions" style="margin-bottom:1.25rem;">
+        <button type="submit" class="btn btn-primary">{{ 'Save changes' if checklist else 'Create checklist' }}</button>
+        <a href="{{ url_for('admin_checklists') }}" class="btn btn-ghost">Cancel</a>
+      </div>
+
+      <!-- Details -->
+      <div class="card">
+        <h2>Details</h2>
+
+        <div class="field">
+          <label for="name">Name <span class="req">*</span></label>
+          <input type="text" id="name" name="name" required value="{{ checklist.name if checklist else '' }}" />
+        </div>
+
+        <div class="field">
+          <label for="description">Description</label>
+          <textarea id="description" name="description">{{ checklist.description if checklist else '' }}</textarea>
+        </div>
+
+        <div class="field">
+          <label for="team_id">Assigned Team</label>
+          <select id="team_id" name="team_id" onchange="filterRolesByTeam()">
+            <option value="">No team</option>
+            {% for team in teams %}
+              <option value="{{ team.id }}"
+                {{ 'selected' if (checklist and checklist.team_id == team.id) else '' }}>
+                {{ team.name }}
+              </option>
+            {% endfor %}
+          </select>
+          <p style="font-size:.8rem;color:#9ca3af;margin-top:.35rem;">Members of this team will see the checklist.</p>
+        </div>
+
+        <div class="field">
+          <label for="assigned_role">Assigned Role</label>
+          <select id="assigned_role" name="assigned_role">
+            <option value="">All users</option>
+            {% for role in roles %}
+              <option value="{{ role.name }}"
+                data-team="{{ role.team_id or '' }}"
+                {{ 'selected' if (checklist and checklist.assigned_role == role.name) else '' }}>
+                {{ role.name | capitalize }}
+              </option>
+            {% endfor %}
+          </select>
+          <p style="font-size:.8rem;color:#9ca3af;margin-top:.35rem;">Only users with this role will see the checklist. Leave blank for all users.</p>
+        </div>
+
+        {% if checklist %}
+        <div class="field">
+          <label class="checkbox-row">
+            <input type="checkbox" name="is_active" {{ 'checked' if checklist.is_active else '' }} />
+            Active (visible to users)
+          </label>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Items -->
+      <div class="card">
+        <h2>Checklist Items</h2>
+
+        <div id="items-list">
+          {% if checklist and checklist.items %}
+            {% for item in checklist.items %}
+            <div class="item-row">
+              <div class="item-row-inner">
+              <span class="drag-handle" title="Drag to reorder">⠿</span>
+              <div style="flex:1;">
+              <div class="item-fields">
+                <div class="full">
+                  <label>Title <span class="req">*</span></label>
+                  <input type="text" name="item_title[]" value="{{ item.title }}" required placeholder="Item title" />
+                </div>
+                <div class="full">
+                  <label>Description</label>
+                  <textarea name="item_description[]" placeholder="Optional description (supports multiple lines)">{{ item.description or '' }}</textarea>
+                </div>
+                <div class="full">
+                  <label>Visual Aid Photo</label>
+                  <input type="hidden" name="item_visual_aid_photo_existing[]" value="{{ item.visual_aid_photo or '' }}" />
+                  {% if item.visual_aid_photo %}
+                    <img class="item-photo-preview" id="preview-{{ loop.index0 }}"
+                         src="{{ image_url(item.visual_aid_photo) }}" alt="Visual aid" />
+                  {% else %}
+                    <img class="item-photo-preview" id="preview-{{ loop.index0 }}" src="" alt="" style="display:none;" />
+                  {% endif %}
+                  <label class="file-input-wrap">
+                    <input type="file" name="item_visual_aid_photo[]" accept="image/*,.heic,.heif"
+                           onchange="previewItemPhoto(this, {{ loop.index0 }})" />
+                    📷 {{ 'Replace photo' if item.visual_aid_photo else 'Upload photo' }}
+                  </label>
+                </div>
+              </div>
+              <div class="item-footer">
+                <label class="checkbox-row">
+                  <input type="checkbox" name="item_required[]" value="{{ loop.index0 }}" {{ 'checked' if item.is_required else '' }} />
+                  Required
+                </label>
+                <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
+              </div>
+              </div>
+              </div>
+            </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+
+        <button type="button" class="btn-add" onclick="addItem()">+ Add item</button>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">{{ 'Save changes' if checklist else 'Create checklist' }}</button>
+        <a href="{{ url_for('admin_checklists') }}" class="btn btn-ghost">Cancel</a>
+        {% if checklist %}
+        <form method="POST" action="{{ url_for('admin_checklist_delete', checklist_id=checklist.id) }}" style="margin-left:auto;"
+              onsubmit="return confirm('Delete this checklist? This cannot be undone.');">
+          <button type="submit" class="btn btn-danger">Delete checklist</button>
+        </form>
+        {% endif %}
+      </div>
+
+    </form>
+  </main>
+
+  <script>
+    const ALL_ROLES = [
+      {% for role in roles %}
+      { name: {{ role.name | tojson }}, teamId: {{ (role.team_id | string) | tojson if role.team_id else '""' }} },
+      {% endfor %}
+    ];
+
+    function filterRolesByTeam() {
+      const teamId = document.getElementById('team_id').value;
+      const roleSelect = document.getElementById('assigned_role');
+      const current = roleSelect.value;
+      // Rebuild options from master list
+      while (roleSelect.options.length > 1) roleSelect.remove(1);
+      ALL_ROLES.forEach(r => {
+        if (!teamId || r.teamId === teamId) {
+          const opt = document.createElement('option');
+          opt.value = r.name;
+          opt.textContent = r.name.charAt(0).toUpperCase() + r.name.slice(1);
+          if (r.name === current) opt.selected = true;
+          roleSelect.appendChild(opt);
+        }
+      });
+    }
+    // Run on load to apply initial state
+    filterRolesByTeam();
+
+    let itemIndex = {{ (checklist.items | length) if checklist and checklist.items else 0 }};
+
+    function addItem() {
+      const list = document.getElementById('items-list');
+      const idx = itemIndex++;
+      const div = document.createElement('div');
+      div.className = 'item-row';
+      div.innerHTML = `
+        <div class="item-row-inner">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <div style="flex:1;">
+        <div class="item-fields">
+          <div class="full">
+            <label>Title <span class="req">*</span></label>
+            <input type="text" name="item_title[]" required placeholder="Item title" />
+          </div>
+          <div class="full">
+            <label>Description</label>
+            <textarea name="item_description[]" placeholder="Optional description (supports multiple lines)" style="min-height:60px;resize:vertical;"></textarea>
+          </div>
+          <div class="full">
+            <label>Visual Aid Photo</label>
+            <input type="hidden" name="item_visual_aid_photo_existing[]" value="" />
+            <img class="item-photo-preview" src="" alt="" style="display:none;" />
+            <label class="file-input-wrap">
+              <input type="file" name="item_visual_aid_photo[]" accept="image/*,.heic,.heif"
+                     onchange="previewItemPhotoEl(this)" />
+              📷 Upload photo
+            </label>
+          </div>
+        </div>
+        <div class="item-footer">
+          <label class="checkbox-row">
+            <input type="checkbox" name="item_required[]" value="${idx}" checked />
+            Required
+          </label>
+          <button type="button" class="btn-remove" onclick="removeItem(this)">Remove</button>
+        </div>
+        </div>
+        </div>`;
+      list.appendChild(div);
+      div.querySelector('input[type="text"]').focus();
+    }
+
+    function previewItemPhoto(input, idx) {
+      if (!input.files || !input.files[0]) return;
+      const img = document.getElementById('preview-' + idx);
+      img.src = URL.createObjectURL(input.files[0]);
+      img.style.display = 'block';
+      input.closest('label').childNodes[input.closest('label').childNodes.length - 1].textContent = ' Replace photo';
+    }
+
+    function previewItemPhotoEl(input) {
+      if (!input.files || !input.files[0]) return;
+      const wrap = input.closest('.full');
+      const img = wrap.querySelector('img.item-photo-preview');
+      img.src = URL.createObjectURL(input.files[0]);
+      img.style.display = 'block';
+      input.closest('label').childNodes[input.closest('label').childNodes.length - 1].textContent = ' Replace photo';
+    }
+
+    function removeItem(btn) {
+      btn.closest('.item-row').remove();
+      // Re-index required checkboxes so values match position
+      document.querySelectorAll('#items-list .item-row').forEach((row, i) => {
+        const cb = row.querySelector('input[type="checkbox"]');
+        if (cb) cb.value = i;
+      });
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script>
+    Sortable.create(document.getElementById('items-list'), {
+      handle: '.drag-handle',
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      onEnd: reindexItems
+    });
+    function reindexItems() {
+      document.querySelectorAll('#items-list .item-row').forEach((row, i) => {
+        const cb = row.querySelector('input[type="checkbox"][name="item_required[]"]');
+        if (cb) cb.value = i;
+      });
+    }
+  </script>
+  <script>
+    document.querySelector('.hamburger').addEventListener('click', function() {
+      var m = this.closest('nav').querySelector('.nav-links, .nav-right');
+      if (m) m.classList.toggle('open');
+    });
+  </script>
+</body>
+</html>

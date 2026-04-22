@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/static/becoming-production-icon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login – Checklist</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0f2f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #e5e7eb;
+      margin-bottom: 1.75rem;
+    }
+
+    .tab {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: .6rem 0;
+      font-size: .9375rem;
+      font-weight: 600;
+      color: #9ca3af;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color .15s, border-color .15s;
+    }
+
+    .tab.active {
+      color: #111;
+      border-bottom-color: #111;
+    }
+
+    .alert {
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      font-size: .875rem;
+      margin-bottom: 1.25rem;
+      border-left: 4px solid transparent;
+    }
+    .alert-error   { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+    .alert-success { background: #f0fdf4; border-color: #22c55e; color: #166534; }
+    .alert-info    { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+
+    label {
+      display: block;
+      font-size: .875rem;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: .4rem;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: .625rem .875rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: .9375rem;
+      color: #111;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+      margin-bottom: 1.25rem;
+    }
+
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="password"]:focus {
+      border-color: #111;
+      box-shadow: 0 0 0 3px rgba(0,0,0,.1);
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: .7rem;
+      background: #111;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+      margin-top: .25rem;
+    }
+
+    button[type="submit"]:hover { background: #333; }
+    button[type="submit"]:active { background: #444; }
+
+    .btn-pco {
+      width: 100%;
+      padding: .7rem;
+      background: #3d7cc9;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+      margin-top: .25rem;
+    }
+    .btn-pco:hover { background: #2f6ab5; }
+
+    .form-panel { display: none; }
+    .form-panel.active { display: block; }
+
+    .pco-note {
+      margin-top: 1rem;
+      font-size: .8125rem;
+      color: #9ca3af;
+      text-align: center;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="tabs">
+      <button class="tab {% if active_tab == 'login' or (not show_register and active_tab != 'pco') %}active{% endif %}"
+              onclick="switchTab('login', this)">Sign in</button>
+      <button class="tab {% if show_register %}active{% endif %}"
+              onclick="switchTab('register', this)">Create account</button>
+      <button class="tab {% if active_tab == 'pco' %}active{% endif %}"
+              onclick="switchTab('pco', this)">Planning Center</button>
+    </div>
+
+    <!-- Sign in -->
+    <div class="form-panel {% if active_tab == 'login' or (not show_register and active_tab != 'pco') %}active{% endif %}"
+         id="panel-login">
+      <form method="POST" action="{{ url_for('login') }}" novalidate>
+        <label for="login-username">Username</label>
+        <input type="text" id="login-username" name="username" autocomplete="username" autofocus required
+               value="{{ request.form.get('username', '') }}" />
+
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" name="password" autocomplete="current-password" required />
+
+        <button type="submit">Sign in</button>
+      </form>
+      <p style="margin-top:1.25rem;font-size:.8125rem;color:#9ca3af;text-align:center;">
+        Forgot your password? Contact your administrator.
+      </p>
+    </div>
+
+    <!-- Create account -->
+    <div class="form-panel {% if show_register %}active{% endif %}" id="panel-register">
+      <form method="POST" action="{{ url_for('register') }}" novalidate>
+        <label for="reg-username">Username</label>
+        <input type="text" id="reg-username" name="username" autocomplete="username" required />
+
+        <label for="reg-email">Email</label>
+        <input type="email" id="reg-email" name="email" autocomplete="email" required />
+
+        <label for="reg-password">Password</label>
+        <input type="password" id="reg-password" name="password" autocomplete="new-password" required />
+
+        <label for="reg-confirm">Confirm password</label>
+        <input type="password" id="reg-confirm" name="confirm_password" autocomplete="new-password" required />
+
+        <button type="submit">Create account</button>
+      </form>
+    </div>
+
+    <!-- Planning Center login -->
+    <div class="form-panel {% if active_tab == 'pco' %}active{% endif %}" id="panel-pco">
+      <form method="POST" action="{{ url_for('login_pco') }}" novalidate>
+        <label for="pco-email">Planning Center email</label>
+        <input type="email" id="pco-email" name="pco_email" autocomplete="email"
+               placeholder="you@example.com" required />
+        <button type="submit" class="btn-pco">Sign in with Planning Center</button>
+      </form>
+      <p class="pco-note">
+        Enter the email address linked to your Planning Center account.<br>
+        Your account will be created automatically on first sign-in.
+      </p>
+    </div>
+
+  </div>
+
+  <script>
+    function switchTab(name, btn) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + name).classList.add('active');
+    }
+  </script>
+</body>
+</html>

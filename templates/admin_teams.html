@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/static/becoming-production-icon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teams – Checklist</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #111; min-height: 100vh; }
+
+    nav { position: relative; background: #fff; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; padding: .875rem 2rem; }
+    nav .brand { font-size: 1.1rem; font-weight: 700; color: #111; text-decoration: none; }
+    nav .nav-links { display: none; position: absolute; top: 100%; right: 1rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: .4rem 0; min-width: 180px; z-index: 100; flex-direction: column; }
+    nav .nav-links.open { display: flex; }
+    nav .nav-links a { font-size: .875rem; color: #374151; text-decoration: none; font-weight: 500; padding: .65rem 1.25rem; display: block; }
+    nav .nav-links a:hover { color: #111; }
+    nav .nav-links a.active { color: #111; font-weight: 700; background: #f3f4f6; }
+    nav .nav-links a.btn-logout { background: none; }
+    nav .nav-links a.btn-logout:hover { background: #f9fafb; }
+    .nav-user { display: flex; align-items: center; gap: .5rem; margin-left: auto; margin-right: .75rem; }
+    .nav-user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #111; color: #fff; font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nav-user-name { font-size: .8125rem; font-weight: 500; color: #374151; }
+    .hamburger { display: flex; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: #374151; border-radius: 2px; }
+
+
+    main { max-width: 900px; margin: 2rem auto; padding: 0 1.5rem; }
+    .page-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.75rem; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; }
+
+    .alert { border-radius: 8px; padding: .75rem 1rem; font-size: .875rem; margin-bottom: 1.25rem; border-left: 4px solid transparent; }
+    .alert-error   { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+    .alert-success { background: #f0fdf4; border-color: #22c55e; color: #166534; }
+    .alert-info    { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+
+    .table-wrap { background: #fff; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,.06); overflow: visible; }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    thead th { background: #f9fafb; padding: .75rem 1rem; text-align: left; font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; border-bottom: 1px solid #e5e7eb; }
+    tbody td { padding: .875rem 1rem; border-bottom: 1px solid #f3f4f6; color: #374151; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #fafafa; }
+    .empty-row td { text-align: center; color: #9ca3af; padding: 2.5rem; }
+
+    .btn { display: inline-flex; align-items: center; padding: .4rem .85rem; border-radius: 8px; font-size: .8125rem; font-weight: 600; border: none; cursor: pointer; text-decoration: none; transition: background .15s; }
+    .btn-primary { background: #111; color: #fff; }
+    .btn-primary:hover { background: #333; }
+    .btn-ghost { background: #f3f4f6; color: #374151; }
+    .btn-ghost:hover { background: #e5e7eb; }
+
+    .member-chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+    .chip { background: #f3f4f6; border-radius: 999px; padding: .2rem .6rem; font-size: .75rem; font-weight: 500; color: #374151; }
+
+    /* Actions dropdown */
+    .actions-wrap { position: relative; display: inline-block; }
+    .actions-btn { background: #f3f4f6; border: none; border-radius: 8px; padding: .4rem .75rem; font-size: .8125rem; font-weight: 600; color: #374151; cursor: pointer; display: flex; align-items: center; gap: .35rem; }
+    .actions-btn:hover { background: #e5e7eb; }
+    .actions-menu { display: none; position: absolute; right: 0; top: calc(100% + 4px); background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.1); min-width: 140px; z-index: 50; overflow: hidden; }
+    .actions-menu.open { display: block; }
+    .actions-menu a, .actions-menu button { display: block; width: 100%; text-align: left; padding: .6rem 1rem; font-size: .8125rem; font-weight: 500; color: #374151; text-decoration: none; background: none; border: none; cursor: pointer; }
+    .actions-menu a:hover, .actions-menu button:hover { background: #f9fafb; color: #111; }
+    .actions-menu form { margin: 0; }
+    .actions-menu .danger { color: #dc2626; }
+    .actions-menu .danger:hover { background: #fef2f2; color: #991b1b; }
+    .actions-menu hr { border: none; border-top: 1px solid #f3f4f6; margin: 0; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="brand" href="{{ url_for('dashboard') }}"><img src="/static/becoming-production-icon.svg" alt="" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;">Checklist</a>
+    <div class="nav-user"><span class="nav-user-avatar">{{ current_user.username[0] | upper }}</span><span class="nav-user-name">{{ current_user.username }}</span></div>
+    <button class="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+    <div class="nav-links">
+      <a href="{{ url_for('admin_checklists') }}">Checklists</a>
+      <a href="{{ url_for('admin_completions') }}">Completions</a>
+      <a href="{{ url_for('admin_users') }}">Users</a>
+      <a href="{{ url_for('admin_roles') }}">Roles</a>
+      <a href="{{ url_for('admin_teams') }}" class="active">Teams</a>
+      <a href="{{ url_for('logout') }}" class="btn-logout">Sign out</a>
+    </div>
+  </nav>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="page-header">
+      <h1>Teams <span style="font-size:1rem;font-weight:400;color:#6b7280;">({{ teams | length }})</span></h1>
+      <a href="{{ url_for('admin_team_new') }}" class="btn btn-primary">+ New team</a>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Team</th>
+            <th>Members</th>
+            <th>Checklists</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if teams %}
+            {% for team in teams %}
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:.5rem;">
+                  <span style="width:12px;height:12px;border-radius:50%;background:{{ team.color or '#111' }};flex-shrink:0;display:inline-block;"></span>
+                  <strong>{{ team.name }}</strong>
+                </div>
+                {% if team.description %}<span style="font-size:.8rem;color:#6b7280;margin-left:1.25rem;">{{ team.description }}</span>{% endif %}
+              </td>
+              <td>
+                {% if team.members %}
+                  <span style="font-weight:600;">{{ team.members | length }}</span>
+                  <span style="color:#9ca3af;font-size:.8rem;"> member{{ 's' if team.members | length != 1 else '' }}</span>
+                {% else %}
+                  <span style="color:#9ca3af;font-size:.8rem;">No members</span>
+                {% endif %}
+              </td>
+              <td>{{ team.checklists | length }}</td>
+              <td>
+                <div class="actions-wrap">
+                  <button class="actions-btn" onclick="toggleMenu(this)">Actions ▾</button>
+                  <div class="actions-menu">
+                    <a href="{{ url_for('admin_team_view', team_id=team.id) }}">View members</a>
+                    <a href="{{ url_for('admin_team_edit', team_id=team.id) }}">Edit</a>
+                    <hr>
+                    <form method="POST" action="{{ url_for('admin_team_delete', team_id=team.id) }}"
+                          onsubmit="return confirm('Delete team \'{{ team.name }}\'? Checklists will be unlinked.')">
+                      <button type="submit" class="danger">Delete</button>
+                    </form>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr class="empty-row"><td colspan="4">No teams yet.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    function toggleMenu(btn) {
+      const menu = btn.nextElementSibling;
+      document.querySelectorAll('.actions-menu.open').forEach(m => { if (m !== menu) m.classList.remove('open'); });
+      menu.classList.toggle('open');
+    }
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.actions-wrap')) document.querySelectorAll('.actions-menu.open').forEach(m => m.classList.remove('open'));
+    });
+    const hamburger = document.querySelector('.hamburger');
+    const navLinks = document.querySelector('.nav-links');
+    if (hamburger) hamburger.addEventListener('click', () => navLinks.classList.toggle('open'));
+  </script>
+</body>
+</html>

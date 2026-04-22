@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/static/becoming-production-icon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ checklist.name }} – History</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #111;
+      min-height: 100vh;
+    }
+
+    nav {
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .875rem 2rem;
+      position: relative;
+    }
+    nav .brand { font-size: 1.1rem; font-weight: 700; color: #111; text-decoration: none; }
+    nav .nav-links { display: none; position: absolute; top: 100%; right: 1rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: .4rem 0; min-width: 180px; z-index: 100; flex-direction: column; }
+    nav .nav-links.open { display: flex; }
+    nav .nav-links a { font-size: .875rem; color: #374151; text-decoration: none; font-weight: 500; padding: .65rem 1.25rem; display: block; }
+    nav .nav-links a:hover { color: #111; }
+    nav .nav-links a.btn-logout { background: none; }
+    nav .nav-links a.btn-logout:hover { background: #f9fafb; }
+
+    main { max-width: 1000px; margin: 2rem auto; padding: 0 1.5rem; }
+
+    .page-header { display: flex; align-items: center; gap: 1rem; margin-bottom: .5rem; }
+    .page-header a { color: #6b7280; text-decoration: none; font-size: .875rem; }
+    .page-header a:hover { color: #111; }
+    .page-header h1 { font-size: 1.4rem; font-weight: 700; }
+
+    .page-sub { font-size: .875rem; color: #6b7280; margin-bottom: 1.75rem; }
+
+    .alert { border-radius: 8px; padding: .75rem 1rem; font-size: .875rem; margin-bottom: 1.25rem; border-left: 4px solid transparent; }
+    .alert-error   { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+    .alert-success { background: #f0fdf4; border-color: #22c55e; color: #166534; }
+    .alert-info    { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+
+    .stats { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .stat-card { background: #fff; border-radius: 12px; padding: 1rem 1.5rem; box-shadow: 0 1px 6px rgba(0,0,0,.06); }
+    .stat-card .label { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; margin-bottom: .3rem; }
+    .stat-card .value { font-size: 1.75rem; font-weight: 700; color: #111; }
+
+    .filter-bar {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      padding: .875rem 1rem;
+      display: flex;
+      gap: .75rem;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+    .filter-bar input[type="text"] {
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: .5rem .875rem;
+      font-size: .875rem;
+      outline: none;
+      flex: 1;
+      min-width: 180px;
+    }
+    .filter-bar input[type="text"]:focus { border-color: #111; }
+    .filter-bar select {
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: .5rem .75rem;
+      font-size: .875rem;
+      outline: none;
+      background: #fff;
+      color: #374151;
+    }
+
+    .table-wrap {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      overflow-x: auto;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    thead th {
+      background: #f9fafb;
+      padding: .75rem 1rem;
+      text-align: left;
+      font-size: .75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: #6b7280;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    tbody td { padding: .875rem 1rem; border-bottom: 1px solid #f3f4f6; color: #374151; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #fafafa; }
+    .empty-row td { text-align: center; color: #9ca3af; padding: 2.5rem; }
+
+    .badge { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+    .badge-green  { background: #111; color: #fff; }
+    .badge-yellow { background: #e5e7eb; color: #555; }
+
+    .progress-wrap { display: flex; align-items: center; gap: .5rem; }
+    .progress-bar-bg { flex: 1; background: #e5e7eb; border-radius: 999px; height: 6px; min-width: 80px; }
+    .progress-bar-fill { background: #111; height: 6px; border-radius: 999px; }
+
+    .btn { display: inline-block; padding: .4rem .85rem; border-radius: 8px; font-size: .8125rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; }
+    .btn-ghost { background: #f3f4f6; color: #374151; }
+    .btn-ghost:hover { background: #e5e7eb; }
+
+    /* ── Hamburger ── */
+    .nav-user { display: flex; align-items: center; gap: .5rem; margin-left: auto; margin-right: .75rem; }
+    .nav-user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #111; color: #fff; font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nav-user-name { font-size: .8125rem; font-weight: 500; color: #374151; }
+    .hamburger { display: flex; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: #374151; border-radius: 2px; }
+
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="brand" href="{{ url_for('dashboard') }}"><img src="/static/becoming-production-icon.svg" alt="" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;">Checklist</a>
+    <div class="nav-user"><span class="nav-user-avatar">{{ current_user.username[0] | upper }}</span><span class="nav-user-name">{{ current_user.username }}</span></div>
+    <button class="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+    <div class="nav-links">
+      <a href="{{ url_for('admin_checklists') }}">Checklists</a>
+      <a href="{{ url_for('admin_completions') }}">Completions</a>
+      <a href="{{ url_for('admin_users') }}">Users</a>
+      <a href="{{ url_for('admin_roles') }}">Roles</a>
+      <a href="{{ url_for('admin_teams') }}">Teams</a>
+      <a href="{{ url_for('logout') }}" class="btn-logout">Sign out</a>
+    </div>
+  </nav>
+
+  <main>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="page-header">
+      <a href="{{ url_for('admin_checklists') }}">← Checklists</a>
+      <h1>{{ checklist.name }}</h1>
+    </div>
+    <p class="page-sub">
+      {{ completions | length }} run{{ 's' if completions | length != 1 else '' }} total
+      {% if checklist.description %} · {{ checklist.description }}{% endif %}
+    </p>
+
+    {% set signed_off_count = completions | selectattr('signed_off') | list | length %}
+    {% set in_progress_count = completions | rejectattr('signed_off') | list | length %}
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="label">Total Runs</div>
+        <div class="value">{{ completions | length }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Signed Off</div>
+        <div class="value">{{ signed_off_count }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">In Progress</div>
+        <div class="value">{{ in_progress_count }}</div>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <input type="text" id="search" placeholder="Search by user…" oninput="filterTable()" />
+      <select id="statusFilter" onchange="filterTable()">
+        <option value="">All statuses</option>
+        <option value="signed">Signed off</option>
+        <option value="progress">In progress</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table id="history-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Progress</th>
+            <th>Started</th>
+            <th>Completed</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if completions %}
+            {% for comp in completions %}
+            <tr data-status="{{ 'signed' if comp.signed_off else 'progress' }}">
+              <td><strong>{{ comp.user.username }}</strong></td>
+              <td>
+                <div class="progress-wrap">
+                  <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" style="width:{{ comp.progress }}%;"></div>
+                  </div>
+                  <span style="font-size:.8rem;color:#6b7280;">{{ comp.progress }}%</span>
+                </div>
+              </td>
+              <td style="white-space:nowrap;">{{ comp.started_at.strftime('%b %-d, %Y %H:%M') }}</td>
+              <td style="white-space:nowrap;">
+                {{ comp.completed_at.strftime('%b %-d, %Y %H:%M') if comp.completed_at else '—' }}
+              </td>
+              <td>
+                {% if comp.signed_off %}
+                  <span class="badge badge-green">Signed off</span>
+                {% else %}
+                  <span class="badge badge-yellow">In progress</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{{ url_for('admin_completion_detail', completion_id=comp.id) }}" class="btn btn-ghost">View</a>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr class="empty-row"><td colspan="6">No runs yet.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <script>
+    function filterTable() {
+      const search = document.getElementById('search').value.toLowerCase();
+      const status = document.getElementById('statusFilter').value;
+      document.querySelectorAll('#history-table tbody tr:not(.empty-row)').forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const rowStatus = row.dataset.status || '';
+        row.style.display = (!search || text.includes(search)) && (!status || rowStatus === status) ? '' : 'none';
+      });
+    }
+  </script>
+  <script>
+    document.querySelector('.hamburger').addEventListener('click', function() {
+      var m = this.closest('nav').querySelector('.nav-links, .nav-right');
+      if (m) m.classList.toggle('open');
+    });
+  </script>
+</body>
+</html>
