@@ -31,11 +31,11 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-change-in-pr
 # Database — set DATABASE_URL to override (e.g. sqlite:///local.db for local dev)
 _db_url = os.environ.get('DATABASE_URL')
 if not _db_url:
-    DB_USER = os.environ.get('DB_USER', 'postgres')
-    DB_PASS = os.environ.get('DB_PASS', 'UX2G1Kl6MgTYb0Gqbmzv')
-    DB_HOST = os.environ.get('DB_HOST', 'checklist.cluster-czacaowa4yxt.us-east-2.rds.amazonaws.com')
+    DB_USER = os.environ.get('DB_USER', 'checklist')
+    DB_PASS = os.environ.get('DB_PASS', '')
+    DB_HOST = os.environ.get('DB_HOST', 'localhost')
     DB_PORT = os.environ.get('DB_PORT', '5432')
-    DB_NAME = os.environ.get('DB_NAME', 'postgres')
+    DB_NAME = os.environ.get('DB_NAME', 'checklist')
     _db_url = f'postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
 
 app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
