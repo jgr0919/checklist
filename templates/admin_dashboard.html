@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/static/becoming-production-icon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Dashboard – Checklist</title>
+  <title>Admin Dashboard – Work Instructions</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #111; min-height: 100vh; }
@@ -170,12 +170,12 @@
 <body>
 
   <nav>
-    <a class="brand" href="{{ url_for('dashboard') }}"><img src="/static/becoming-production-icon.svg" alt="" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;">Checklist</a>
+    <a class="brand" href="{{ url_for('dashboard') }}"><img src="/static/becoming-production-icon.svg" alt="" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;">Work Instructions</a>
     <div class="nav-user"><span class="nav-user-avatar">{{ current_user.username[0] | upper }}</span><span class="nav-user-name">{{ current_user.username }}</span></div>
     <button class="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
     <div class="nav-links">
-      <a href="{{ url_for('admin_checklists') }}">Checklists</a>
-      <a href="{{ url_for('admin_completions') }}">Completions</a>
+      <a href="{{ url_for('admin_checklists') }}">Instructions</a>
+      <a href="{{ url_for('admin_feedback') }}">Feedback</a>
       <a href="{{ url_for('admin_users') }}">Users</a>
       <a href="{{ url_for('admin_roles') }}">Roles</a>
       <a href="{{ url_for('admin_teams') }}">Teams</a>
@@ -193,26 +193,21 @@
 
     <div class="page-header">
       <h1>Dashboard</h1>
-      <a href="{{ url_for('admin_checklist_new') }}" class="btn btn-primary btn-lg">+ New Checklist</a>
+      <a href="{{ url_for('admin_checklist_new') }}" class="btn btn-primary btn-lg">+ New Instruction</a>
     </div>
 
     <!-- ── Overview ── -->
     <div class="section-label">Overview</div>
     <div class="stat-grid">
       <div class="stat-card">
-        <div class="stat-label">Checklists</div>
-        <div class="stat-value">{{ total_checklists }}</div>
+        <div class="stat-label">Instructions</div>
+        <div class="stat-value">{{ total_instructions }}</div>
         <a class="stat-link" href="{{ url_for('admin_checklists') }}">View all →</a>
       </div>
       <div class="stat-card">
-        <div class="stat-label">In Progress</div>
-        <div class="stat-value">{{ total_in_progress }}</div>
-        <a class="stat-link" href="{{ url_for('admin_completions') }}">View all →</a>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Signed Off</div>
-        <div class="stat-value">{{ total_completions }}</div>
-        <a class="stat-link" href="{{ url_for('admin_completions') }}">View all →</a>
+        <div class="stat-label">Feedback</div>
+        <div class="stat-value">{{ total_feedback }}</div>
+        <a class="stat-link" href="{{ url_for('admin_feedback') }}">View all →</a>
       </div>
       <div class="stat-card">
         <div class="stat-label">Users</div>
@@ -226,95 +221,60 @@
       </div>
     </div>
 
-    <!-- ── Activity ── -->
-    <div class="section-label">Activity</div>
-    <div class="panel-grid">
-
-      <!-- In Progress -->
-      <div class="panel">
-        <div class="panel-header">
-          <h2>In Progress</h2>
-          <a href="{{ url_for('admin_completions') }}">View all</a>
-        </div>
-        {% if in_progress %}
-          {% for comp in in_progress %}
-          <div class="panel-row">
-            <div>
-              <div class="row-name">{{ comp.checklist.name }}</div>
-              <div class="row-sub">{{ comp.user.username }}</div>
-            </div>
-            <div class="prog">
-              <div class="prog-bg"><div class="prog-fill" style="width:{{ comp.progress }}%;"></div></div>
-              <span class="prog-pct">{{ comp.progress }}%</span>
-            </div>
-            <a href="{{ url_for('admin_completion_detail', completion_id=comp.id) }}" class="btn btn-ghost row-action">View</a>
-          </div>
-          {% endfor %}
-        {% else %}
-          <div class="panel-empty">No checklists in progress.</div>
-        {% endif %}
-      </div>
-
-      <!-- Recent Completions -->
-      <div class="panel">
-        <div class="panel-header">
-          <h2>Recent Sign-offs</h2>
-          <a href="{{ url_for('admin_completions') }}">View all</a>
-        </div>
-        {% if completions %}
-          {% for comp in completions %}
-          <div class="panel-row">
-            <div>
-              <div class="row-name">{{ comp.checklist.name }}</div>
-              <div class="row-sub">{{ comp.user.username }}</div>
-            </div>
-            <div class="prog">
-              <div class="prog-bg"><div class="prog-fill" style="width:{{ comp.progress }}%;"></div></div>
-              <span class="prog-pct">{{ comp.progress }}%</span>
-            </div>
-            <span class="row-sub row-action" style="white-space:nowrap;">
-              {{ comp.completed_at.strftime('%b %-d') if comp.completed_at else '—' }}
-            </span>
-          </div>
-          {% endfor %}
-        {% else %}
-          <div class="panel-empty">No sign-offs yet.</div>
-        {% endif %}
-      </div>
-
-    </div>
-
-    <!-- ── Checklists ── -->
-    <div class="section-label">Checklists</div>
+    <!-- ── Recent Feedback ── -->
+    <div class="section-label">Recent Feedback</div>
     <div class="panel panel-full">
       <div class="panel-header">
-        <h2>Recent Active Checklists</h2>
+        <h2>Latest Submissions</h2>
+        <a href="{{ url_for('admin_feedback') }}">View all</a>
+      </div>
+      {% if recent_feedback %}
+        {% for fb in recent_feedback %}
+        <div class="panel-row">
+          <div style="flex:1;min-width:0;">
+            <div class="row-name">{{ fb.instruction.name }}</div>
+            <div class="row-sub">{{ fb.user.username }} · {{ fb.submitted_at.strftime('%b %-d, %Y') }}</div>
+          </div>
+          <div style="flex:2;min-width:0;padding:0 1rem;">
+            <span style="font-size:.8125rem;color:#374151;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ fb.content }}</span>
+          </div>
+          <a href="{{ url_for('admin_feedback') }}?instruction_id={{ fb.instruction_id }}" class="btn btn-ghost row-action">View</a>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="panel-empty">No feedback submitted yet.</div>
+      {% endif %}
+    </div>
+
+    <!-- ── Instructions ── -->
+    <div class="section-label">Instructions</div>
+    <div class="panel panel-full">
+      <div class="panel-header">
+        <h2>Recently Added</h2>
         <a href="{{ url_for('admin_checklists') }}">View all</a>
       </div>
-      {% if checklists %}
-        {% for cl in checklists %}
+      {% if instructions %}
+        {% for inst in instructions %}
         <div class="cl-row">
           <div class="cl-name">
-            {{ cl.name }}
-            {% if cl.team %}
+            {{ inst.name }}
+            {% if inst.team %}
               <span style="display:inline-flex;align-items:center;gap:.3rem;margin-left:.4rem;">
-                <span style="width:8px;height:8px;border-radius:50%;background:{{ cl.team.color or '#111' }};flex-shrink:0;"></span>
-                <span style="font-size:.75rem;color:#9ca3af;font-weight:400;">{{ cl.team.name }}</span>
+                <span style="width:8px;height:8px;border-radius:50%;background:{{ inst.team.color or '#111' }};flex-shrink:0;"></span>
+                <span style="font-size:.75rem;color:#9ca3af;font-weight:400;">{{ inst.team.name }}</span>
               </span>
             {% endif %}
           </div>
-          <span class="cl-meta">{{ cl.items | length }} item{{ 's' if cl.items | length != 1 }}</span>
-          <span class="cl-meta">By {{ cl.creator.username if cl.creator else '—' }}</span>
+          <span class="cl-meta">{{ inst.items | length }} step{{ 's' if inst.items | length != 1 }}</span>
+          <span class="cl-meta">By {{ inst.creator.username if inst.creator else '—' }}</span>
           <div class="cl-actions">
-            <a href="{{ url_for('admin_checklist_edit', checklist_id=cl.id) }}" class="btn btn-ghost">Edit</a>
-            <form method="POST" action="{{ url_for('start_checklist', checklist_id=cl.id) }}" style="margin:0;">
-              <button type="submit" class="btn btn-primary">Start</button>
-            </form>
+            <a href="{{ url_for('view_instruction', instruction_id=inst.id) }}" class="btn btn-ghost">View</a>
+            <a href="{{ url_for('admin_checklist_edit', checklist_id=inst.id) }}" class="btn btn-primary">Edit</a>
           </div>
         </div>
         {% endfor %}
       {% else %}
-        <div class="panel-empty">No active checklists.</div>
+        <div class="panel-empty">No active instructions.</div>
       {% endif %}
     </div>
 

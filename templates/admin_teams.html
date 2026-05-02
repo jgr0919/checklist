@@ -68,12 +68,12 @@
 <body>
 
   <nav>
-    <a class="brand" href="{{ url_for('dashboard') }}"><img src="/static/becoming-production-icon.svg" alt="" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;">Checklist</a>
+    <a class="brand" href="{{ url_for('dashboard') }}"><img src="/static/becoming-production-icon.svg" alt="" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;">Work Instructions</a>
     <div class="nav-user"><span class="nav-user-avatar">{{ current_user.username[0] | upper }}</span><span class="nav-user-name">{{ current_user.username }}</span></div>
     <button class="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
     <div class="nav-links">
-      <a href="{{ url_for('admin_checklists') }}">Checklists</a>
-      <a href="{{ url_for('admin_completions') }}">Completions</a>
+      <a href="{{ url_for('admin_checklists') }}">Instructions</a>
+      <a href="{{ url_for('admin_feedback') }}">Feedback</a>
       <a href="{{ url_for('admin_users') }}">Users</a>
       <a href="{{ url_for('admin_roles') }}">Roles</a>
       <a href="{{ url_for('admin_teams') }}" class="active">Teams</a>
@@ -99,7 +99,7 @@
           <tr>
             <th>Team</th>
             <th>Members</th>
-            <th>Checklists</th>
+            <th>Instructions</th>
             <th></th>
           </tr>
         </thead>

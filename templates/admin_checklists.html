@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/static/becoming-production-icon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Checklists – Checklist</title>
+  <title>Work Instructions – Admin</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -175,12 +175,12 @@
 <body>
 
   <nav>
-    <a class="brand" href="{{ url_for('dashboard') }}"><img src="/static/becoming-production-icon.svg" alt="" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;">Checklist</a>
+    <a class="brand" href="{{ url_for('dashboard') }}"><img src="/static/becoming-production-icon.svg" alt="" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;">Work Instructions</a>
     <div class="nav-user"><span class="nav-user-avatar">{{ current_user.username[0] | upper }}</span><span class="nav-user-name">{{ current_user.username }}</span></div>
     <button class="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
     <div class="nav-links">
-      <a href="{{ url_for('admin_checklists') }}" class="active">Checklists</a>
-      <a href="{{ url_for('admin_completions') }}">Completions</a>
+      <a href="{{ url_for('admin_checklists') }}" class="active">Instructions</a>
+      <a href="{{ url_for('admin_feedback') }}">Feedback</a>
       <a href="{{ url_for('admin_users') }}">Users</a>
       <a href="{{ url_for('admin_roles') }}">Roles</a>
       <a href="{{ url_for('admin_teams') }}">Teams</a>
@@ -197,8 +197,8 @@
     {% endwith %}
 
     <div class="page-header">
-      <h1>Checklists <span class="summary">({{ checklists | length }})</span></h1>
-      <a href="{{ url_for('admin_checklist_new') }}" class="btn btn-primary">+ New checklist</a>
+      <h1>Work Instructions <span class="summary">({{ checklists | length }})</span></h1>
+      <a href="{{ url_for('admin_checklist_new') }}" class="btn btn-primary">+ New instruction</a>
     </div>
 
     <div class="filter-bar">
@@ -215,8 +215,7 @@
         <thead>
           <tr>
             <th>Name</th>
-            <th>Items</th>
-            <th>Completions</th>
+            <th>Steps</th>
             <th>Status</th>
             <th>Team</th>
             <th>Role</th>
@@ -235,7 +234,6 @@
                 {% endif %}
               </td>
               <td>{{ cl.items | length }}</td>
-              <td>{{ cl.completions | length }}</td>
               <td>
                 {% if cl.is_active %}
                   <span class="badge badge-green">Active</span>
@@ -267,11 +265,9 @@
                     Actions <span>▾</span>
                   </button>
                   <div class="actions-menu">
-                    <form method="POST" action="{{ url_for('start_checklist', checklist_id=cl.id) }}">
-                      <button type="submit">Start</button>
-                    </form>
+                    <a href="{{ url_for('view_instruction', instruction_id=cl.id) }}">View</a>
                     <a href="{{ url_for('admin_checklist_edit', checklist_id=cl.id) }}">Edit</a>
-                    <a href="{{ url_for('admin_checklist_history', checklist_id=cl.id) }}">History</a>
+                    <a href="{{ url_for('admin_feedback') }}?instruction_id={{ cl.id }}">Feedback</a>
                     <a href="{{ url_for('admin_checklist_export_pdf', checklist_id=cl.id) }}">Export PDF</a>
                     <form method="POST" action="{{ url_for('admin_checklist_duplicate', checklist_id=cl.id) }}">
                       <button type="submit">Duplicate</button>
@@ -282,7 +278,7 @@
             </tr>
             {% endfor %}
           {% else %}
-            <tr class="empty-row"><td colspan="7">No checklists yet. <a href="{{ url_for('admin_checklist_new') }}" style="color:#111;">Create one</a>.</td></tr>
+            <tr class="empty-row"><td colspan="6">No work instructions yet. <a href="{{ url_for('admin_checklist_new') }}" style="color:#111;">Create one</a>.</td></tr>
           {% endif %}
         </tbody>
       </table>

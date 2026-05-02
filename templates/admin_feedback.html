@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/static/becoming-production-icon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feedback – Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #111; min-height: 100vh; }
+
+    nav { position: relative; background: #fff; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; padding: .875rem 2rem; }
+    nav .brand { font-size: 1.1rem; font-weight: 700; color: #111; text-decoration: none; }
+    nav .nav-links { display: none; position: absolute; top: 100%; right: 1rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: .4rem 0; min-width: 180px; z-index: 100; flex-direction: column; }
+    nav .nav-links.open { display: flex; }
+    nav .nav-links a { font-size: .875rem; color: #374151; text-decoration: none; font-weight: 500; padding: .65rem 1.25rem; display: block; }
+    nav .nav-links a:hover { color: #111; background: #f9fafb; }
+    nav .nav-links a.active { color: #111; font-weight: 700; background: #f3f4f6; }
+    .nav-user { display: flex; align-items: center; gap: .5rem; margin-left: auto; margin-right: .75rem; }
+    .nav-user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #111; color: #fff; font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nav-user-name { font-size: .8125rem; font-weight: 500; color: #374151; }
+    .hamburger { display: flex; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: #374151; border-radius: 2px; }
+
+    main { max-width: 960px; margin: 2rem auto; padding: 0 1.5rem; }
+
+    .page-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.25rem; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; }
+
+    .alert { border-radius: 8px; padding: .75rem 1rem; font-size: .875rem; margin-bottom: 1.25rem; border-left: 4px solid transparent; }
+    .alert-error   { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+    .alert-success { background: #f0fdf4; border-color: #22c55e; color: #166534; }
+    .alert-info    { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+
+    /* Filter bar */
+    .filter-bar {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      padding: .875rem 1rem;
+      display: flex;
+      gap: .75rem;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+    .filter-bar label { font-size: .875rem; color: #6b7280; font-weight: 500; white-space: nowrap; }
+    .filter-bar select {
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: .5rem .75rem;
+      font-size: .875rem;
+      outline: none;
+      background: #fff;
+      color: #374151;
+      min-width: 200px;
+    }
+    .filter-bar select:focus { border-color: #111; }
+    .btn { display: inline-block; padding: .45rem .9rem; border-radius: 8px; font-size: .8125rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: background .15s; }
+    .btn-ghost { background: #f3f4f6; color: #374151; }
+    .btn-ghost:hover { background: #e5e7eb; }
+
+    /* Feedback cards */
+    .feedback-list { display: flex; flex-direction: column; gap: .875rem; }
+
+    .feedback-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      padding: 1.25rem 1.5rem;
+    }
+
+    .feedback-meta {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin-bottom: .75rem;
+      flex-wrap: wrap;
+    }
+    .feedback-user {
+      font-size: .8125rem;
+      font-weight: 600;
+      color: #111;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+    }
+    .user-avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #111;
+      color: #fff;
+      font-size: .65rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .feedback-instruction {
+      font-size: .8125rem;
+      color: #6b7280;
+    }
+    .feedback-instruction a {
+      color: #374151;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .feedback-instruction a:hover { text-decoration: underline; color: #111; }
+    .feedback-time { font-size: .75rem; color: #9ca3af; margin-left: auto; white-space: nowrap; }
+
+    .feedback-content {
+      font-size: .9rem;
+      color: #374151;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .empty-state {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      padding: 3rem 2rem;
+      text-align: center;
+      color: #9ca3af;
+      font-size: .9rem;
+    }
+    .summary { font-size: .8125rem; color: #6b7280; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="brand" href="{{ url_for('dashboard') }}">
+      <img src="/static/becoming-production-icon.svg" alt="" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;">
+      Work Instructions
+    </a>
+    <div class="nav-user">
+      <span class="nav-user-avatar">{{ current_user.username[0] | upper }}</span>
+      <span class="nav-user-name">{{ current_user.username }}</span>
+    </div>
+    <button class="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+    <div class="nav-links">
+      <a href="{{ url_for('admin_checklists') }}">Instructions</a>
+      <a href="{{ url_for('admin_feedback') }}" class="active">Feedback</a>
+      <a href="{{ url_for('admin_users') }}">Users</a>
+      <a href="{{ url_for('admin_roles') }}">Roles</a>
+      <a href="{{ url_for('admin_teams') }}">Teams</a>
+      <a href="{{ url_for('logout') }}">Sign out</a>
+    </div>
+  </nav>
+
+  <main>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="page-header">
+      <h1>Feedback <span class="summary">({{ feedback_items | length }})</span></h1>
+    </div>
+
+    <form class="filter-bar" method="GET" action="{{ url_for('admin_feedback') }}">
+      <label for="instruction_filter">Filter by instruction:</label>
+      <select id="instruction_filter" name="instruction_id" onchange="this.form.submit()">
+        <option value="">All instructions</option>
+        {% for inst in instructions %}
+          <option value="{{ inst.id }}" {{ 'selected' if filter_instruction_id == inst.id else '' }}>
+            {{ inst.name }}
+          </option>
+        {% endfor %}
+      </select>
+      {% if filter_instruction_id %}
+        <a href="{{ url_for('admin_feedback') }}" class="btn btn-ghost">Clear filter</a>
+      {% endif %}
+    </form>
+
+    {% if feedback_items %}
+      <div class="feedback-list">
+        {% for fb in feedback_items %}
+        <div class="feedback-card">
+          <div class="feedback-meta">
+            <span class="feedback-user">
+              <span class="user-avatar">{{ fb.user.username[0] | upper }}</span>
+              {{ fb.user.username }}
+            </span>
+            <span class="feedback-instruction">
+              on <a href="{{ url_for('view_instruction', instruction_id=fb.instruction_id) }}">{{ fb.instruction.name }}</a>
+            </span>
+            <span class="feedback-time">{{ fb.submitted_at.strftime('%b %-d, %Y at %-I:%M %p') }}</span>
+          </div>
+          <div class="feedback-content">{{ fb.content }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        {% if filter_instruction_id %}
+          No feedback submitted for this instruction yet.
+        {% else %}
+          No feedback has been submitted yet.
+        {% endif %}
+      </div>
+    {% endif %}
+
+  </main>
+
+  <script>
+    document.querySelector('.hamburger').addEventListener('click', function() {
+      this.closest('nav').querySelector('.nav-links').classList.toggle('open');
+    });
+  </script>
+</body>
+</html>

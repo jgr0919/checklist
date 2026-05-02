@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/static/becoming-production-icon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ 'Edit' if checklist else 'New' }} Checklist – Checklist</title>
+  <title>{{ 'Edit' if checklist else 'New' }} Work Instruction – Admin</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -192,12 +192,12 @@
 <body>
 
   <nav>
-    <a class="brand" href="{{ url_for('dashboard') }}"><img src="/static/becoming-production-icon.svg" alt="" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;">Checklist</a>
+    <a class="brand" href="{{ url_for('dashboard') }}"><img src="/static/becoming-production-icon.svg" alt="" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;">Work Instructions</a>
     <div class="nav-user"><span class="nav-user-avatar">{{ current_user.username[0] | upper }}</span><span class="nav-user-name">{{ current_user.username }}</span></div>
     <button class="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
     <div class="nav-links">
-      <a href="{{ url_for('admin_checklists') }}">Checklists</a>
-      <a href="{{ url_for('admin_completions') }}">Completions</a>
+      <a href="{{ url_for('admin_checklists') }}">Instructions</a>
+      <a href="{{ url_for('admin_feedback') }}">Feedback</a>
       <a href="{{ url_for('admin_users') }}">Users</a>
       <a href="{{ url_for('admin_roles') }}">Roles</a>
       <a href="{{ url_for('admin_teams') }}">Teams</a>
@@ -214,15 +214,15 @@
     {% endwith %}
 
     <div class="page-header">
-      <a href="{{ url_for('admin_checklists') }}">← Checklists</a>
-      <h1>{{ 'Edit Checklist' if checklist else 'New Checklist' }}</h1>
+      <a href="{{ url_for('admin_checklists') }}">← Work Instructions</a>
+      <h1>{{ 'Edit Work Instruction' if checklist else 'New Work Instruction' }}</h1>
     </div>
 
     <form method="POST" action="{{ url_for('admin_checklist_edit', checklist_id=checklist.id) if checklist else url_for('admin_checklist_new') }}"
           enctype="multipart/form-data">
 
       <div class="form-actions" style="margin-bottom:1.25rem;">
-        <button type="submit" class="btn btn-primary">{{ 'Save changes' if checklist else 'Create checklist' }}</button>
+        <button type="submit" class="btn btn-primary">{{ 'Save changes' if checklist else 'Create instruction' }}</button>
         <a href="{{ url_for('admin_checklists') }}" class="btn btn-ghost">Cancel</a>
       </div>
 
@@ -231,7 +231,7 @@
         <h2>Details</h2>
 
         <div class="field">
-          <label for="name">Name <span class="req">*</span></label>
+          <label for="name">Title <span class="req">*</span></label>
           <input type="text" id="name" name="name" required value="{{ checklist.name if checklist else '' }}" />
         </div>
 
@@ -251,7 +251,7 @@
               </option>
             {% endfor %}
           </select>
-          <p style="font-size:.8rem;color:#9ca3af;margin-top:.35rem;">Members of this team will see the checklist.</p>
+          <p style="font-size:.8rem;color:#9ca3af;margin-top:.35rem;">Members of this team will see this instruction.</p>
         </div>
 
         <div class="field">
@@ -266,7 +266,7 @@
               </option>
             {% endfor %}
           </select>
-          <p style="font-size:.8rem;color:#9ca3af;margin-top:.35rem;">Only users with this role will see the checklist. Leave blank for all users.</p>
+          <p style="font-size:.8rem;color:#9ca3af;margin-top:.35rem;">Only users with this role will see this instruction. Leave blank for all users.</p>
         </div>
 
         {% if checklist %}
@@ -279,9 +279,9 @@
         {% endif %}
       </div>
 
-      <!-- Items -->
+      <!-- Steps -->
       <div class="card">
-        <h2>Checklist Items</h2>
+        <h2>Steps</h2>
 
         <div id="items-list">
           {% if checklist and checklist.items %}
@@ -293,7 +293,7 @@
               <div class="item-fields">
                 <div class="full">
                   <label>Title <span class="req">*</span></label>
-                  <input type="text" name="item_title[]" value="{{ item.title }}" required placeholder="Item title" />
+                  <input type="text" name="item_title[]" value="{{ item.title }}" required placeholder="Step title" />
                 </div>
                 <div class="full">
                   <label>Description</label>
@@ -329,16 +329,16 @@
           {% endif %}
         </div>
 
-        <button type="button" class="btn-add" onclick="addItem()">+ Add item</button>
+        <button type="button" class="btn-add" onclick="addItem()">+ Add step</button>
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">{{ 'Save changes' if checklist else 'Create checklist' }}</button>
+        <button type="submit" class="btn btn-primary">{{ 'Save changes' if checklist else 'Create instruction' }}</button>
         <a href="{{ url_for('admin_checklists') }}" class="btn btn-ghost">Cancel</a>
         {% if checklist %}
         <form method="POST" action="{{ url_for('admin_checklist_delete', checklist_id=checklist.id) }}" style="margin-left:auto;"
-              onsubmit="return confirm('Delete this checklist? This cannot be undone.');">
-          <button type="submit" class="btn btn-danger">Delete checklist</button>
+              onsubmit="return confirm('Delete this work instruction? This cannot be undone.');">
+          <button type="submit" class="btn btn-danger">Delete instruction</button>
         </form>
         {% endif %}
       </div>
@@ -386,7 +386,7 @@
         <div class="item-fields">
           <div class="full">
             <label>Title <span class="req">*</span></label>
-            <input type="text" name="item_title[]" required placeholder="Item title" />
+            <input type="text" name="item_title[]" required placeholder="Step title" />
           </div>
           <div class="full">
             <label>Description</label>

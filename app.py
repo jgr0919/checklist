@@ -249,6 +249,17 @@ class ItemResponse(db.Model):
     item = db.relationship('ChecklistItem', foreign_keys=[item_id])
 
 
+class InstructionFeedback(db.Model):
+    __tablename__ = 'instruction_feedback'
+    id = db.Column(db.Integer, primary_key=True)
+    instruction_id = db.Column(db.Integer, db.ForeignKey('checklists.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    instruction = db.relationship('Checklist', foreign_keys=[instruction_id])
+    user = db.relationship('User', foreign_keys=[user_id])
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -399,20 +410,17 @@ def logout():
 @login_required
 def dashboard():
     if current_user.is_admin:
-        checklists = Checklist.query.filter_by(is_active=True).order_by(Checklist.created_at.desc()).limit(8).all()
-        in_progress = ChecklistCompletion.query.filter_by(signed_off=False).order_by(ChecklistCompletion.started_at.desc()).limit(8).all()
-        completions = ChecklistCompletion.query.filter_by(signed_off=True).order_by(ChecklistCompletion.started_at.desc()).limit(8).all()
-        total_checklists = Checklist.query.count()
-        total_completions = ChecklistCompletion.query.filter_by(signed_off=True).count()
-        total_in_progress = ChecklistCompletion.query.filter_by(signed_off=False).count()
+        instructions = Checklist.query.filter_by(is_active=True).order_by(Checklist.created_at.desc()).limit(8).all()
+        recent_feedback = InstructionFeedback.query.order_by(InstructionFeedback.submitted_at.desc()).limit(8).all()
+        total_instructions = Checklist.query.count()
+        total_feedback = InstructionFeedback.query.count()
         total_users = User.query.count()
         total_teams = Team.query.count()
-        return render_template('admin_dashboard.html', checklists=checklists,
-                               in_progress=in_progress,
-                               completions=completions,
-                               total_checklists=total_checklists,
-                               total_completions=total_completions,
-                               total_in_progress=total_in_progress,
+        return render_template('admin_dashboard.html',
+                               instructions=instructions,
+                               recent_feedback=recent_feedback,
+                               total_instructions=total_instructions,
+                               total_feedback=total_feedback,
                                total_users=total_users,
                                total_teams=total_teams)
     else:
@@ -421,24 +429,25 @@ def dashboard():
         role_filter = or_(
             Checklist.assigned_role == None,
             Checklist.assigned_role == '',
-            Checklist.assigned_role == current_user.role,
             Checklist.team_id.in_(user_team_ids) if user_team_ids else db.false()
         )
-        checklists = Checklist.query.filter(
+        instructions = Checklist.query.filter(
             Checklist.is_active == True,
             role_filter
-        ).order_by(Checklist.created_at.desc()).all()
-        # Group by team; no-team checklists go into 'Default'
-        grouped = {}
-        for cl in checklists:
-            key = cl.team.name if cl.team else 'Default'
-            grouped.setdefault(key, []).append(cl)
-        grouped_checklists = sorted(grouped.items(), key=lambda x: (x[0] == 'Default', x[0].lower()))
-        my_completions = ChecklistCompletion.query.filter_by(
-            user_id=current_user.id
-        ).order_by(ChecklistCompletion.started_at.desc()).limit(5).all()
-        return render_template('user_dashboard.html', grouped_checklists=grouped_checklists,
-                               my_completions=my_completions)
+        ).order_by(Checklist.name).all()
+        # Group by team → role
+        grouped = {}  # {team_name: {role_name: [instructions]}}
+        for inst in instructions:
+            team_key = inst.team.name if inst.team else 'General'
+            role_key = inst.assigned_role or 'General'
+            grouped.setdefault(team_key, {}).setdefault(role_key, []).append(inst)
+        # Sort teams (General last), roles (General last within each team)
+        grouped_instructions = []
+        for team_name in sorted(grouped.keys(), key=lambda x: (x == 'General', x.lower())):
+            roles = grouped[team_name]
+            role_groups = sorted(roles.items(), key=lambda x: (x[0] == 'General', x[0].lower()))
+            grouped_instructions.append((team_name, role_groups))
+        return render_template('user_dashboard.html', grouped_instructions=grouped_instructions)
 
 
 # ─────────────────────────────────────────
@@ -600,15 +609,6 @@ def admin_checklist_duplicate(checklist_id):
     return redirect(url_for('admin_checklist_edit', checklist_id=copy.id))
 
 
-@app.route('/admin/checklists/<int:checklist_id>/history')
-@login_required
-@admin_required
-def admin_checklist_history(checklist_id):
-    cl = Checklist.query.get_or_404(checklist_id)
-    completions = ChecklistCompletion.query.filter_by(checklist_id=checklist_id)\
-        .order_by(ChecklistCompletion.started_at.desc()).all()
-    return render_template('admin_checklist_history.html', checklist=cl, completions=completions)
-
 
 @app.route('/admin/checklists/<int:checklist_id>/export-pdf')
 @login_required
@@ -741,22 +741,18 @@ def admin_checklist_export_pdf(checklist_id):
     return response
 
 
-@app.route('/admin/completions')
+@app.route('/admin/feedback')
 @login_required
 @admin_required
-def admin_completions():
-    completions = ChecklistCompletion.query.order_by(
-        ChecklistCompletion.started_at.desc()
-    ).all()
-    return render_template('admin_completions.html', completions=completions)
-
-
-@app.route('/admin/completions/<int:completion_id>')
-@login_required
-@admin_required
-def admin_completion_detail(completion_id):
-    completion = ChecklistCompletion.query.get_or_404(completion_id)
-    return render_template('view_completion.html', completion=completion)
+def admin_feedback():
+    instruction_id = request.args.get('instruction_id', type=int)
+    query = InstructionFeedback.query.order_by(InstructionFeedback.submitted_at.desc())
+    if instruction_id:
+        query = query.filter_by(instruction_id=instruction_id)
+    feedback_items = query.all()
+    instructions = Checklist.query.order_by(Checklist.name).all()
+    return render_template('admin_feedback.html', feedback_items=feedback_items,
+                           instructions=instructions, filter_instruction_id=instruction_id)
 
 
 @app.route('/admin/users')
@@ -862,110 +858,38 @@ def admin_user_new():
 
 
 # ─────────────────────────────────────────
-# User: Checklist Completion
+# User: Work Instruction View & Feedback
 # ─────────────────────────────────────────
 
-@app.route('/checklist/<int:checklist_id>/start', methods=['POST'])
+@app.route('/instruction/<int:instruction_id>')
 @login_required
-def start_checklist(checklist_id):
-    checklist = Checklist.query.get_or_404(checklist_id)
-    # Check for existing in-progress completion
-    existing = ChecklistCompletion.query.filter_by(
-        checklist_id=checklist_id,
+def view_instruction(instruction_id):
+    instruction = Checklist.query.get_or_404(instruction_id)
+    if not instruction.is_active and not current_user.is_admin:
+        flash('This work instruction is not available.', 'error')
+        return redirect(url_for('dashboard'))
+    feedback_submitted = session.pop(f'feedback_submitted_{instruction_id}', False)
+    return render_template('view_instruction.html', instruction=instruction,
+                           feedback_submitted=feedback_submitted)
+
+
+@app.route('/instruction/<int:instruction_id>/feedback', methods=['POST'])
+@login_required
+def submit_feedback(instruction_id):
+    instruction = Checklist.query.get_or_404(instruction_id)
+    content = request.form.get('content', '').strip()
+    if not content:
+        flash('Feedback cannot be empty.', 'error')
+        return redirect(url_for('view_instruction', instruction_id=instruction_id))
+    feedback = InstructionFeedback(
+        instruction_id=instruction_id,
         user_id=current_user.id,
-        signed_off=False
-    ).first()
-    if existing:
-        return redirect(url_for('do_checklist', completion_id=existing.id))
-
-    completion = ChecklistCompletion(
-        checklist_id=checklist_id,
-        user_id=current_user.id
+        content=content
     )
-    db.session.add(completion)
-    db.session.flush()
-
-    for item in checklist.items:
-        response = ItemResponse(completion_id=completion.id, item_id=item.id)
-        db.session.add(response)
+    db.session.add(feedback)
     db.session.commit()
-    return redirect(url_for('do_checklist', completion_id=completion.id))
-
-
-@app.route('/checklist/completion/<int:completion_id>', methods=['GET', 'POST'])
-@login_required
-def do_checklist(completion_id):
-    completion = ChecklistCompletion.query.get_or_404(completion_id)
-    if completion.user_id != current_user.id and not current_user.is_admin:
-        flash('Access denied.', 'error')
-        return redirect(url_for('dashboard'))
-    if completion.signed_off:
-        return redirect(url_for('view_completion', completion_id=completion_id))
-
-    if request.method == 'POST':
-        action = request.form.get('action')
-        # Save item states
-        for response in completion.item_responses:
-            checked = request.form.get(f'item_{response.item_id}') == 'on'
-            notes = request.form.get(f'notes_{response.item_id}', '').strip()
-            if checked and not response.is_checked:
-                response.checked_at = datetime.utcnow()
-            response.is_checked = checked
-            response.notes = notes
-        completion.overall_notes = request.form.get('overall_notes', '').strip()
-
-        if action == 'sign_off':
-            sig_name = request.form.get('signature_name', '').strip()
-            if not sig_name:
-                flash('Please enter your name to sign off.', 'error')
-                db.session.commit()
-                return redirect(url_for('do_checklist', completion_id=completion_id))
-            # Check all required items
-            required_unchecked = []
-            for response in completion.item_responses:
-                if response.item.is_required and not response.is_checked:
-                    required_unchecked.append(response.item.title)
-            if required_unchecked:
-                flash(f'Please complete all required items before signing off. Missing: {", ".join(required_unchecked[:3])}', 'error')
-                db.session.commit()
-                return redirect(url_for('do_checklist', completion_id=completion_id))
-            completion.signed_off = True
-            completion.completed_at = datetime.utcnow()
-            completion.signature_name = sig_name
-            db.session.commit()
-            flash('Checklist signed off successfully!', 'success')
-            return redirect(url_for('view_completion', completion_id=completion_id))
-        else:
-            db.session.commit()
-            flash('Progress saved.', 'success')
-    return render_template('do_checklist.html', completion=completion)
-
-
-@app.route('/checklist/completion/<int:completion_id>/cancel', methods=['POST'])
-@login_required
-def cancel_checklist(completion_id):
-    completion = ChecklistCompletion.query.get_or_404(completion_id)
-    if completion.user_id != current_user.id and not current_user.is_admin:
-        flash('Access denied.', 'error')
-        return redirect(url_for('dashboard'))
-    if completion.signed_off:
-        flash('Cannot cancel a signed-off checklist.', 'error')
-        return redirect(url_for('view_completion', completion_id=completion_id))
-    ItemResponse.query.filter_by(completion_id=completion_id).delete()
-    db.session.delete(completion)
-    db.session.commit()
-    flash('Checklist cancelled.', 'info')
-    return redirect(url_for('dashboard'))
-
-
-@app.route('/checklist/completion/<int:completion_id>/view')
-@login_required
-def view_completion(completion_id):
-    completion = ChecklistCompletion.query.get_or_404(completion_id)
-    if completion.user_id != current_user.id and not current_user.is_admin:
-        flash('Access denied.', 'error')
-        return redirect(url_for('dashboard'))
-    return render_template('view_completion.html', completion=completion)
+    session[f'feedback_submitted_{instruction_id}'] = True
+    return redirect(url_for('view_instruction', instruction_id=instruction_id))
 
 
 # ─────────────────────────────────────────
@@ -1120,35 +1044,6 @@ def admin_team_delete(team_id):
     return redirect(url_for('admin_teams'))
 
 
-# ─────────────────────────────────────────
-# API: Auto-save item via AJAX
-# ─────────────────────────────────────────
-
-@app.route('/api/completion/<int:completion_id>/item/<int:item_id>', methods=['POST'])
-@login_required
-def api_save_item(completion_id, item_id):
-    completion = ChecklistCompletion.query.get_or_404(completion_id)
-    if completion.user_id != current_user.id:
-        return jsonify({'error': 'Forbidden'}), 403
-    if completion.signed_off:
-        return jsonify({'error': 'Already signed off'}), 400
-    data = request.get_json()
-    response = ItemResponse.query.filter_by(
-        completion_id=completion_id, item_id=item_id
-    ).first()
-    if response:
-        response.is_checked = data.get('checked', False)
-        response.notes = data.get('notes', '')
-        if response.is_checked and not response.checked_at:
-            response.checked_at = datetime.utcnow()
-        db.session.commit()
-        # Recalculate progress
-        all_resp = ItemResponse.query.filter_by(completion_id=completion_id).all()
-        checked_count = sum(1 for r in all_resp if r.is_checked)
-        progress = int((checked_count / len(all_resp)) * 100) if all_resp else 0
-        return jsonify({'success': True, 'progress': progress})
-    return jsonify({'error': 'Not found'}), 404
-
 
 # ─────────────────────────────────────────
 # Init DB & Seed Admin
@@ -1180,6 +1075,15 @@ def init_db():
             conn.execute(db.text(
                 "ALTER TABLE teams ADD COLUMN IF NOT EXISTS color VARCHAR(7) DEFAULT '#111111'"
             ))
+            conn.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS instruction_feedback (
+                    id SERIAL PRIMARY KEY,
+                    instruction_id INTEGER NOT NULL REFERENCES checklists(id) ON DELETE CASCADE,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    content TEXT NOT NULL,
+                    submitted_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
             conn.commit()
     admin = User.query.filter_by(username='admin').first()
     if not admin:
