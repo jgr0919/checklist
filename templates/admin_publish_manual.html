@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/static/becoming-production-icon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Publish Manual – Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #111;
+      min-height: 100vh;
+    }
+
+    nav {
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .875rem 2rem;
+      position: relative;
+    }
+    nav .brand { font-size: 1.1rem; font-weight: 700; color: #111; text-decoration: none; }
+    nav .nav-links { display: none; position: absolute; top: 100%; right: 1rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: .4rem 0; min-width: 180px; z-index: 100; flex-direction: column; }
+    nav .nav-links.open { display: flex; }
+    nav .nav-links a { font-size: .875rem; color: #374151; text-decoration: none; font-weight: 500; padding: .65rem 1.25rem; display: block; }
+    nav .nav-links a:hover { color: #111; }
+    nav .nav-links a.active { color: #111; font-weight: 700; background: #f3f4f6; }
+    nav .hamburger { background: none; border: 1px solid #e5e7eb; border-radius: 8px; padding: .4rem .6rem; cursor: pointer; display: flex; gap: 4px; flex-direction: column; }
+    nav .hamburger span { display: block; width: 18px; height: 2px; background: #374151; border-radius: 2px; }
+
+    main { max-width: 860px; margin: 2rem auto; padding: 0 1.5rem; }
+
+    .page-header { margin-bottom: 1.75rem; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; }
+    .page-header p { color: #6b7280; margin-top: .35rem; font-size: .9rem; }
+
+    .alert { border-radius: 8px; padding: .75rem 1rem; font-size: .875rem; margin-bottom: 1.25rem; border-left: 4px solid transparent; }
+    .alert-error   { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+    .alert-success { background: #f0fdf4; border-color: #22c55e; color: #166534; }
+    .alert-info    { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+    .alert-warning { background: #fffbeb; border-color: #f59e0b; color: #92400e; }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.07);
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      padding-bottom: .6rem;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: .75rem;
+    }
+
+    .stat-item {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: .85rem 1rem;
+      text-align: center;
+    }
+    .stat-item .num { font-size: 1.6rem; font-weight: 700; color: #1a2b4a; }
+    .stat-item .label { font-size: .78rem; color: #6b7280; margin-top: .15rem; }
+
+    .config-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .6rem 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: .875rem;
+    }
+    .config-row:last-child { border-bottom: none; }
+    .config-row .key { color: #6b7280; font-weight: 500; }
+    .config-row .val { font-family: ui-monospace, monospace; font-size: .82rem; color: #111; }
+    .config-row .badge-ok  { background: #dcfce7; color: #166534; border-radius: 999px; padding: .15rem .6rem; font-size: .75rem; font-weight: 600; }
+    .config-row .badge-err { background: #fee2e2; color: #991b1b; border-radius: 999px; padding: .15rem .6rem; font-size: .75rem; font-weight: 600; }
+
+    .status-banner {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: .85rem;
+      margin-bottom: 1.25rem;
+    }
+    .status-banner .icon { font-size: 1.5rem; }
+    .status-banner .text { flex: 1; }
+    .status-banner .text strong { display: block; font-size: .95rem; }
+    .status-banner .text small { color: #6b7280; font-size: .8rem; }
+    .status-banner a { font-size: .85rem; color: #3b82f6; }
+
+    .never-published {
+      background: #f9fafb;
+      border: 1px dashed #d1d5db;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      font-size: .875rem;
+      color: #9ca3af;
+      text-align: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .publish-section { text-align: center; padding: .5rem 0 .25rem; }
+
+    .btn-publish {
+      background: #1a2b4a;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: .85rem 2.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, opacity .15s;
+      display: inline-flex;
+      align-items: center;
+      gap: .6rem;
+    }
+    .btn-publish:hover { background: #253d6a; }
+    .btn-publish:disabled { opacity: .55; cursor: not-allowed; }
+
+    .btn-publish .spinner {
+      display: none;
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .publish-note { font-size: .8rem; color: #9ca3af; margin-top: .6rem; }
+
+    .team-list { list-style: none; }
+    .team-list li {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .45rem 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: .9rem;
+    }
+    .team-list li:last-child { border-bottom: none; }
+    .team-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .team-count { margin-left: auto; color: #9ca3af; font-size: .82rem; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="{{ url_for('admin_checklists') }}" class="brand">&#9679; Work Instructions</a>
+  <button class="hamburger" onclick="this.nextElementSibling.classList.toggle('open')" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="nav-links">
+    <a href="{{ url_for('admin_checklists') }}">Instructions</a>
+    <a href="{{ url_for('admin_users') }}">Users</a>
+    <a href="{{ url_for('admin_teams') }}">Teams</a>
+    <a href="{{ url_for('admin_roles') }}">Roles</a>
+    <a href="{{ url_for('admin_feedback') }}">Feedback</a>
+    <a href="{{ url_for('admin_publish_manual') }}" class="active">Publish Manual</a>
+    <a href="{{ url_for('logout') }}">Log out</a>
+  </div>
+</nav>
+
+<main>
+
+  <div class="page-header">
+    <h1>Publish User Manual</h1>
+    <p>Generate a static HTML manual from all active work instructions and publish it to your S3 bucket.</p>
+  </div>
+
+  {% for msg in get_flashed_messages(with_categories=true) %}
+    <div class="alert alert-{{ msg[0] }}">{{ msg[1] }}</div>
+  {% endfor %}
+
+  {% if not s3_configured %}
+  <div class="alert alert-warning">
+    <strong>S3 not configured.</strong> Set the <code>S3_BUCKET</code> and <code>AWS_DEFAULT_REGION</code> environment variables to enable publishing.
+  </div>
+  {% endif %}
+
+  <!-- S3 Config -->
+  <div class="card">
+    <h2>S3 Configuration</h2>
+    <div class="config-row">
+      <span class="key">S3 Bucket</span>
+      {% if s3_configured %}
+        <span class="val">{{ s3_bucket }}</span>
+      {% else %}
+        <span class="badge-err">Not set</span>
+      {% endif %}
+    </div>
+    <div class="config-row">
+      <span class="key">Region</span>
+      <span class="val">{{ s3_region }}</span>
+    </div>
+    <div class="config-row">
+      <span class="key">Manual prefix</span>
+      <span class="val">manual/</span>
+    </div>
+    <div class="config-row">
+      <span class="key">Status</span>
+      {% if s3_configured %}
+        <span class="badge-ok">Configured</span>
+      {% else %}
+        <span class="badge-err">Missing bucket</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Last Published -->
+  {% if last_published %}
+  <div class="status-banner">
+    <div class="icon">&#10003;</div>
+    <div class="text">
+      <strong>Manual is live</strong>
+      <small>Last published: {{ last_published }}</small>
+    </div>
+    <a href="{{ manual_url }}" target="_blank" rel="noopener">View &rarr;</a>
+  </div>
+  {% else %}
+  <div class="never-published">Manual has not been published yet.</div>
+  {% endif %}
+
+  <!-- Content Summary -->
+  <div class="card">
+    <h2>What will be included</h2>
+    <div class="stat-grid">
+      <div class="stat-item">
+        <div class="num">{{ checklist_count }}</div>
+        <div class="label">Work Instructions</div>
+      </div>
+      <div class="stat-item">
+        <div class="num">{{ item_count }}</div>
+        <div class="label">Total Steps</div>
+      </div>
+      <div class="stat-item">
+        <div class="num">{{ team_count }}</div>
+        <div class="label">Teams</div>
+      </div>
+      <div class="stat-item">
+        <div class="num">{{ photo_count }}</div>
+        <div class="label">Visual Aids</div>
+      </div>
+    </div>
+    {% if teams %}
+    <ul class="team-list" style="margin-top:1rem">
+      {% for team in teams %}
+      <li>
+        <span class="team-dot" style="background:{{ team.color or '#94a3b8' }}"></span>
+        {{ team.name }}
+        <span class="team-count">{{ team_checklist_counts[team.id] }} instruction{{ 's' if team_checklist_counts[team.id] != 1 else '' }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+
+  <!-- Publish Button -->
+  {% if s3_configured %}
+  <div class="card">
+    <h2>Generate &amp; Publish</h2>
+    <div class="publish-section">
+      <form method="POST" id="publishForm">
+        <button type="submit" class="btn-publish" id="publishBtn">
+          <span class="spinner" id="spinner"></span>
+          <span id="btnText">&#128218; Generate &amp; Publish Manual</span>
+        </button>
+      </form>
+      <p class="publish-note">This will overwrite the current published version at <code>{{ manual_url }}</code></p>
+    </div>
+  </div>
+  {% endif %}
+
+</main>
+
+<script>
+  document.getElementById('publishForm')?.addEventListener('submit', function () {
+    const btn = document.getElementById('publishBtn');
+    const spinner = document.getElementById('spinner');
+    const btnText = document.getElementById('btnText');
+    btn.disabled = true;
+    spinner.style.display = 'block';
+    btnText.textContent = 'Publishing…';
+  });
+</script>
+
+</body>
+</html>

@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import boto3
+import manual_generator
 import requests as http_requests
 from botocore.exceptions import ClientError
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, make_response
@@ -1043,6 +1044,84 @@ def admin_team_delete(team_id):
     flash(f'Team "{team.name}" deleted.', 'info')
     return redirect(url_for('admin_teams'))
 
+
+# ─────────────────────────────────────────
+# Publish Manual
+# ─────────────────────────────────────────
+
+@app.route('/admin/publish-manual', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_publish_manual():
+    s3_configured = bool(S3_BUCKET and _s3)
+    manual_url = (f'https://{S3_BUCKET}.s3.{S3_REGION}.amazonaws.com/'
+                  f'{manual_generator.MANUAL_PREFIX}/index.html') if s3_configured else ''
+
+    if request.method == 'POST':
+        if not s3_configured:
+            flash('S3 is not configured. Set S3_BUCKET and AWS_DEFAULT_REGION.', 'error')
+            return redirect(url_for('admin_publish_manual'))
+        try:
+            teams = Team.query.order_by(Team.name).all()
+            all_checklists = (Checklist.query
+                              .filter_by(is_active=True)
+                              .order_by(Checklist.name)
+                              .all())
+
+            def items_fn(checklist_id):
+                return (ChecklistItem.query
+                        .filter_by(checklist_id=checklist_id)
+                        .order_by(ChecklistItem.order_index)
+                        .all())
+
+            result = manual_generator.generate_and_publish(
+                teams=teams,
+                all_checklists=all_checklists,
+                checklist_items_fn=items_fn,
+                image_url_fn=image_url,
+                s3_client=_s3,
+                bucket=S3_BUCKET,
+                region=S3_REGION,
+            )
+            flash(
+                f'Manual published — {result["files_uploaded"]} files uploaded. '
+                f'View at {result["url"]}',
+                'success',
+            )
+        except Exception as exc:
+            flash(f'Publish failed: {exc}', 'error')
+        return redirect(url_for('admin_publish_manual'))
+
+    # GET — build summary stats for the page
+    teams = Team.query.order_by(Team.name).all()
+    all_checklists = Checklist.query.filter_by(is_active=True).all()
+    all_items = ChecklistItem.query.filter(
+        ChecklistItem.checklist_id.in_([c.id for c in all_checklists])
+    ).all() if all_checklists else []
+
+    team_checklist_counts = {t.id: 0 for t in teams}
+    for c in all_checklists:
+        if c.team_id and c.team_id in team_checklist_counts:
+            team_checklist_counts[c.team_id] += 1
+
+    last_published = None
+    if s3_configured:
+        last_published = manual_generator.get_last_published(_s3, S3_BUCKET, S3_REGION)
+
+    return render_template(
+        'admin_publish_manual.html',
+        s3_configured=s3_configured,
+        s3_bucket=S3_BUCKET or '',
+        s3_region=S3_REGION,
+        manual_url=manual_url,
+        last_published=last_published,
+        checklist_count=len(all_checklists),
+        item_count=len(all_items),
+        team_count=len(teams),
+        photo_count=sum(1 for it in all_items if it.visual_aid_photo),
+        teams=teams,
+        team_checklist_counts=team_checklist_counts,
+    )
 
 
 # ─────────────────────────────────────────
